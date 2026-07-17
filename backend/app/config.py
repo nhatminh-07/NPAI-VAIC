@@ -1,13 +1,17 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Thư mục gốc của app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # --- Database ---
-# MVP dùng SQLite cho demo local/48h. Khi triển khai thật, đổi DATABASE_URL
-# sang chuỗi kết nối Supabase Postgres, ví dụ:
-# postgresql://postgres:<password>@<host>:5432/postgres
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/dienbien_agri.db")
+# Ưu tiên biến môi trường (Supabase), fallback về SQLite local
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{BASE_DIR}/dienbien_agri.db"
+)
 
 # --- Storage ảnh (demo dùng local disk, sau này đổi sang Supabase Storage) ---
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploaded_images")
