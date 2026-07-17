@@ -58,7 +58,7 @@ cd backend
 python -m venv venv
 source venv/Scripts/activate  # Linux/Mac
 # hoặc
-venv\Scripts\activate  # Windows
+.\venv\Scripts\activate  # Windows
 
 # Cài dependencies
 pip install -r requirements.txt
