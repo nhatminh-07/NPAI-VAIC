@@ -1,0 +1,128 @@
+// Single source of truth for all Vietnamese user-facing copy.
+
+export const copy = {
+  appName: 'Nông Nghiệp Số Điện Biên',
+
+  common: {
+    loading: 'Đang tải...',
+    error: 'Đã xảy ra lỗi. Vui lòng thử lại.',
+    retry: 'Thử lại',
+    empty: 'Chưa có dữ liệu.',
+    back: 'Quay lại',
+    backendUnreachableTitle: 'Chưa kết nối được máy chủ',
+    backendUnreachableDesc:
+      'Ứng dụng chưa được kết nối với máy chủ dữ liệu. Vui lòng cấu hình máy chủ hoặc thử lại sau.',
+  },
+
+  rolePicker: {
+    title: 'Nông Nghiệp Số Điện Biên',
+    subtitle: 'Chọn vai trò của bạn để bắt đầu',
+    farmer: 'Tôi là nông dân',
+    farmerDesc: 'Chẩn đoán bệnh cây, dự báo năng suất, xem giá thị trường',
+    official: 'Tôi là cán bộ nông nghiệp',
+    officialDesc: 'Xem bảng điều khiển tổng hợp toàn tỉnh',
+  },
+
+  nav: {
+    scan: 'Chẩn đoán',
+    forecast: 'Dự báo',
+    prices: 'Giá cả',
+    dashboard: 'Tổng quan',
+    switchRole: 'Đổi vai trò',
+  },
+
+  scan: {
+    title: 'Chẩn đoán bệnh cây trồng',
+    uploadPrompt: 'Chạm để chụp hoặc chọn ảnh lá cây',
+    uploadHint: 'Chụp cận cảnh vùng bị bệnh, đủ ánh sáng',
+    changePhoto: 'Chọn ảnh khác',
+    analyzeButton: 'Phân tích',
+    analyzing: 'Đang phân tích ảnh...',
+    resultTitle: 'Kết quả chẩn đoán',
+    confidenceLabel: 'Độ tin cậy',
+    scientificNameLabel: 'Tên khoa học',
+    severityLabel: 'Mức độ',
+    severity: {
+      healthy: 'Khỏe mạnh',
+      mild: 'Nhẹ',
+      moderate: 'Trung bình',
+      severe: 'Nặng',
+    },
+    lowConfidenceWarning:
+      'Kết quả chưa chắc chắn. Vui lòng chụp lại ảnh gần hơn, rõ nét và đủ ánh sáng để có kết quả chính xác hơn.',
+    recommendationsTitle: 'Khuyến nghị xử lý',
+    heatmapPlaceholder: 'Bản đồ nhiệt vùng bệnh sẽ được hỗ trợ trong phiên bản tiếp theo',
+    saveReport: 'Lưu báo cáo',
+    retake: 'Chụp lại',
+    errorTitle: 'Không thể phân tích ảnh',
+  },
+
+  forecast: {
+    title: 'Dự báo năng suất & thời điểm thu hoạch',
+    formTitle: 'Thông tin vụ mùa',
+    cropLabel: 'Loại cây trồng',
+    crop: {
+      rice: 'Lúa',
+      coffee: 'Cà phê',
+      vegetable: 'Rau màu',
+    },
+    areaLabel: 'Diện tích (ha)',
+    areaPlaceholder: 'Ví dụ: 1.5',
+    areaError: 'Diện tích phải lớn hơn 0',
+    plantingDateLabel: 'Ngày gieo trồng',
+    plantingDateError: 'Vui lòng chọn ngày gieo trồng',
+    districtLabel: 'Huyện/Thị xã',
+    districtPlaceholder: 'Chọn huyện',
+    submitButton: 'Dự báo',
+    predicting: 'Đang tính toán dự báo...',
+    resultTitle: 'Kết quả dự báo',
+    predictedYieldLabel: 'Năng suất dự kiến',
+    totalOutputLabel: 'Tổng sản lượng dự kiến',
+    harvestWindowLabel: 'Thời điểm thu hoạch dự kiến',
+    confidenceLabel: 'Độ tin cậy',
+    riskLabel: 'Mức độ rủi ro',
+    risk: {
+      low: 'Thấp',
+      medium: 'Trung bình',
+      high: 'Cao',
+    },
+    rationaleTitle: 'Cơ sở dự báo',
+    errorTitle: 'Không thể tạo dự báo',
+  },
+
+  prices: {
+    title: 'Giá thị trường',
+    currentPriceLabel: 'Giá hiện tại',
+    change7dLabel: 'Thay đổi 7 ngày',
+    historyLabel: 'Lịch sử giá',
+    forecastLabel: 'Dự báo',
+    confidenceBandLabel: 'Khoảng dự báo',
+    chartLegendHistory: 'Giá thực tế',
+    chartLegendForecast: 'Giá dự báo',
+    disclaimer: 'Thông tin chỉ mang tính tham khảo, không phải khuyến nghị mua/bán.',
+    errorTitle: 'Không thể tải dữ liệu giá',
+  },
+
+  dashboard: {
+    title: 'Bảng điều khiển tổng hợp',
+    periodLabel: 'Kỳ báo cáo',
+    cropFilterLabel: 'Cây trồng',
+    allCrops: 'Tất cả cây trồng',
+    qoq: 'so với quý trước',
+    yoy: 'so với cùng kỳ năm trước',
+    districtYieldChartTitle: 'Năng suất theo huyện (kỳ hiện tại so với kỳ trước)',
+    diseaseCasesChartTitle: 'Số ca bệnh theo loại',
+    diseaseTrendChartTitle: 'Xu hướng dịch bệnh theo quý',
+    currentPeriod: 'Kỳ hiện tại',
+    previousPeriod: 'Kỳ trước',
+    rankingTableTitle: 'Xếp hạng huyện',
+    rankingColumns: {
+      rank: 'Hạng',
+      district: 'Huyện',
+      yield: 'Năng suất (tấn/ha)',
+      output: 'Sản lượng (tấn)',
+      diseaseCases: 'Ca bệnh',
+    },
+    errorTitle: 'Không thể tải bảng điều khiển',
+  },
+} as const;
