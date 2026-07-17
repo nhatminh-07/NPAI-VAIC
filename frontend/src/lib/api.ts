@@ -63,56 +63,44 @@ export async function getDashboard(period: string, cropId?: number): Promise<Das
 
   const raw = await request<{
     period: string;
-    crop_name?: string | null;
-    total_area_ha?: { label: string; current: number; previous: number; change_percent: number };
-    avg_yield_per_ha?: { label: string; current: number; previous: number; change_percent: number };
-    disease_case_count?: { label: string; current: number; previous: number; change_percent: number };
-    disease_rate_percent?: { label: string; current: number; previous: number; change_percent: number };
-    year_over_year_note?: string;
+    cropId?: number;
+    kpis?: Array<{
+      id: string;
+      labelVi: string;
+      value: number;
+      unit: string;
+      qoqDeltaPercent: number;
+      yoyDeltaPercent: number;
+    }>;
+    districtYield?: Array<{
+      district: string;
+      currentYieldTPerHa: number;
+      previousYieldTPerHa: number;
+    }>;
+    diseaseCases?: Array<{
+      diseaseName: string;
+      cases: number;
+    }>;
+    diseaseTrend?: Array<{
+      quarterLabel: string;
+      cases: number;
+    }>;
+    districtRankings?: Array<{
+      rank: number;
+      district: string;
+      yieldTPerHa: number;
+      outputTons: number;
+      diseaseCases: number;
+    }>;
   }>(`/dashboard?${params.toString()}`);
-
-  const kpis = [
-    raw.total_area_ha && {
-      id: 'total_area_ha',
-      labelVi: raw.total_area_ha.label || 'Tổng diện tích',
-      value: raw.total_area_ha.current,
-      unit: 'ha',
-      qoqDeltaPercent: raw.total_area_ha.change_percent,
-      yoyDeltaPercent: 0,
-    },
-    raw.avg_yield_per_ha && {
-      id: 'avg_yield_per_ha',
-      labelVi: raw.avg_yield_per_ha.label || 'Năng suất trung bình',
-      value: raw.avg_yield_per_ha.current,
-      unit: 'tấn/ha',
-      qoqDeltaPercent: raw.avg_yield_per_ha.change_percent,
-      yoyDeltaPercent: 0,
-    },
-    raw.disease_case_count && {
-      id: 'disease_case_count',
-      labelVi: raw.disease_case_count.label || 'Số ca sâu bệnh',
-      value: raw.disease_case_count.current,
-      unit: 'ca',
-      qoqDeltaPercent: raw.disease_case_count.change_percent,
-      yoyDeltaPercent: 0,
-    },
-    raw.disease_rate_percent && {
-      id: 'disease_rate_percent',
-      labelVi: raw.disease_rate_percent.label || 'Tỷ lệ sâu bệnh',
-      value: raw.disease_rate_percent.current,
-      unit: '%',
-      qoqDeltaPercent: raw.disease_rate_percent.change_percent,
-      yoyDeltaPercent: 0,
-    },
-  ].filter(Boolean) as DashboardResult['kpis'];
 
   return {
     period: raw.period,
     cropId: cropId,
-    kpis,
-    districtYield: [],
-    diseaseCases: [],
-    diseaseTrend: [],
-    districtRankings: [],
+    kpis: raw.kpis ?? [],
+    districtYield: raw.districtYield ?? [],
+    diseaseCases: raw.diseaseCases ?? [],
+    diseaseTrend: raw.diseaseTrend ?? [],
+    districtRankings: raw.districtRankings ?? [],
   };
 }
