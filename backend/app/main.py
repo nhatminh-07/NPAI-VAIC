@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import CORS_ORIGINS, BASE_DIR, UPLOAD_DIR
 from app.database import Base, engine
 from app import models  # noqa: F401 - đảm bảo models được đăng ký trước create_all
-from app.routers import disease, yield_forecast, market_price, dashboard
+from app.routers import disease, yield_forecast, market_price
 from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard
 
 # Tạo bảng nếu chưa tồn tại (MVP dùng SQLite; khi lên Supabase có thể dùng Alembic)
@@ -34,7 +34,6 @@ app.mount("/static/uploaded_images", StaticFiles(directory=UPLOAD_DIR), name="up
 app.include_router(disease.router)
 app.include_router(yield_forecast.router)
 app.include_router(market_price.router)
-app.include_router(dashboard.router)
 
 # Frontend API routers (Next.js compatible)
 app.include_router(frontend_disease.router)

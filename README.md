@@ -54,7 +54,7 @@ NPAI-VAIC/
 ```bash
 cd backend
 
-# Tạo virtual environment
+# Tạo virtual environment ( PHẢI DÙNG PYTHON CÓ VER =< 12)
 python -m venv venv
 source venv/Scripts/activate  # Linux/Mac
 # hoặc
