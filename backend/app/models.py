@@ -46,37 +46,26 @@ class Farm(Base):
 
 
 class DiseaseDetection(Base):
+    """Bảng thống nhất cho mọi lượt nhận diện sâu bệnh - dùng chung cho cả API cũ
+    (/detect-disease, có thể gắn farm_id) và API officer (/disease/detect, có thể
+    không gắn farm cụ thể, chỉ ghi nhận theo huyện/district).
+    """
     __tablename__ = "disease_detections"
 
     id = Column(Integer, primary_key=True, index=True)
-    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
+    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=True)  # nullable: officer report có thể không gắn farm có sẵn
+    district = Column(String, nullable=False, default="Điện Biên")
+    crop_type = Column(String, nullable=False)  # rice | coffee | vegetable
     image_url = Column(String, nullable=False)
-    disease_label = Column(String, nullable=False)
+    disease_label = Column(String, nullable=False)  # tên tiếng Việt, vd "Đạo ôn lúa"
+    scientific_name = Column(String, nullable=True)
     confidence = Column(Float, nullable=False)
+    severity = Column(String, nullable=True)  # healthy | mild | moderate | severe
+    affected_plant_count = Column(Integer, nullable=True)  # chỉ có khi báo cáo qua /disease/detect
     recommendation = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     farm = relationship("Farm", back_populates="disease_detections")
-
-
-class DiseaseReport(Base):
-    """Báo cáo sâu bệnh do officer tạo qua tab Disease trên dashboard.
-    Tách riêng khỏi DiseaseDetection (vốn gắn với farm_id cụ thể) vì đây là
-    báo cáo nhanh, không bắt buộc phải liên kết với 1 farm có sẵn trong hệ thống.
-    """
-    __tablename__ = "disease_reports"
-
-    id = Column(Integer, primary_key=True, index=True)
-    district = Column(String, nullable=False, default="Điện Biên")
-    crop_type = Column(String, nullable=False)  # rice | coffee | vegetable
-    disease_name = Column(String, nullable=False)
-    scientific_name = Column(String, nullable=True)
-    confidence = Column(Float, nullable=False)
-    severity = Column(String, nullable=False)  # healthy | mild | moderate | severe
-    affected_plant_count = Column(Integer, nullable=False)
-    recommendations = Column(Text, nullable=True)  # lưu dạng JSON string list
-    image_url = Column(String, nullable=False)
-    reported_at = Column(DateTime, default=datetime.utcnow)
 
 
 class YieldPrediction(Base):

@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import DiseaseDetection, Farm
 from app.schemas import DiseaseDetectionResponse
 from app.services.disease_model import get_model
+from app.services.disease_rules import get_disease_display
 
 router = APIRouter(prefix="", tags=["Disease Detection"])
 
@@ -33,45 +34,36 @@ async def detect_disease_endpoint(
         f.write(content)
 
     model = get_model()
-    disease_label, confidence = model.predict(save_path, crop_name=crop_name)
+    disease_key, confidence = model.predict(save_path, crop_name=crop_name)
+    disease_label_vi, scientific_name, severity, recommendations = get_disease_display(disease_key)
     image_url = f"/static/uploaded_images/{filename}"
+    recommendation_text = "; ".join(recommendations)
 
-    # Map sang response format
-    label_names = {
-        "healthy": "Cây khỏe mạnh",
-        "rice_blast": "Đạo ôn lúa",
-        "bacterial_leaf_blight": "Bạc lá vi khuẩn",
-        "coffee_leaf_rust": "Gỉ sắt cà phê",
-        "coffee_berry_borer": "Sâu đục quả cà phê",
-        "vegetable_downy_mildew": "Sương mai rau màu",
-        "vegetable_aphids": "Rệp hại rau màu",
-    }
-    disease_label_vi = label_names.get(disease_label, disease_label)
-    recommendations = [
-        "Theo dõi tình trạng cây trồng thường xuyên.",
-        "Kiểm tra độ ẩm đất và điều chỉnh tưới tiêu.",
-        "Tham khảo ý kiến chuyên gia nông nghiệp địa phương.",
-    ]
-    if disease_label != "healthy":
-        recommendations.insert(0, "Cách ly cây bệnh để tránh lây lan.")
-        recommendations.insert(1, "Phun thuốc trừ sâu phù hợp theo hướng dẫn.")
-
+    # Nếu có farm_id hợp lệ, lấy district từ farm.location; nếu không thì dùng mặc định
+    district = "Điện Biên"
+    farm = None
     if farm_id is not None:
         farm = db.query(Farm).filter(Farm.id == farm_id).first()
         if farm:
-            record = DiseaseDetection(
-                farm_id=farm_id,
-                image_url=image_url,
-                disease_label=disease_label_vi,
-                confidence=confidence,
-                recommendation="; ".join(recommendations),
-            )
-            db.add(record)
-            db.commit()
+            district = farm.location
+
+    record = DiseaseDetection(
+        farm_id=farm_id if farm else None,
+        district=district,
+        crop_type=crop_name,
+        image_url=image_url,
+        disease_label=disease_label_vi,
+        scientific_name=scientific_name,
+        confidence=confidence,
+        severity=severity,
+        recommendation=recommendation_text,
+    )
+    db.add(record)
+    db.commit()
 
     return DiseaseDetectionResponse(
         disease_label=disease_label_vi,
         confidence=confidence,
-        recommendation="; ".join(recommendations),
+        recommendation=recommendation_text,
         image_url=image_url,
     )

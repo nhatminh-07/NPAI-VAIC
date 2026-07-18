@@ -3,19 +3,18 @@ Router cho frontend - API contract theo định dạng Next.js frontend.
 Endpoint: POST /disease/detect
 Response: DiseaseDetectionResult
 """
-import json
 import os
 import uuid
-from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.config import UPLOAD_DIR, DISEASE_RULES_JSON
+from app.config import UPLOAD_DIR
 from app.database import get_db
-from app.models import DiseaseReport
+from app.models import DiseaseDetection
 from app.schemas import DiseaseReportItem, DiseaseReportListResponse
-from app.services.disease_service import detect_disease
+from app.services.disease_model import get_model
+from app.services.disease_rules import get_disease_display
 
 router = APIRouter(prefix="/disease", tags=["Frontend - Disease Detection"])
 
@@ -27,42 +26,6 @@ ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 VALID_CROP_TYPES = {"rice", "coffee", "vegetable"}
 
 
-def _get_scientific_name(disease_key: str) -> str:
-    """Map disease key to scientific name."""
-    scientific_names = {
-        "healthy": "Không có bệnh",
-        "rice_blast": "Pyricularia oryzae",
-        "bacterial_leaf_blight": "Xanthomonas oryzae pv. oryzae",
-        "coffee_leaf_rust": "Hemileia vastatrix",
-        "coffee_berry_borer": "Hypothenemus hampei",
-        "vegetable_downy_mildew": "Peronosporaceae",
-        "vegetable_aphids": "Aphidoidea",
-    }
-    return scientific_names.get(disease_key, "Không xác định")
-
-
-def _get_severity(disease_key: str, confidence: float) -> str:
-    """Map disease to severity level."""
-    if disease_key == "healthy":
-        return "healthy"
-    severity_map = {
-        "rice_blast": "moderate",
-        "bacterial_leaf_blight": "severe",
-        "coffee_leaf_rust": "mild",
-        "coffee_berry_borer": "moderate",
-        "vegetable_downy_mildew": "mild",
-        "vegetable_aphids": "moderate",
-    }
-    return severity_map.get(disease_key, "moderate")
-
-
-def _parse_recommendations(recommendation: str) -> List[str]:
-    """Parse recommendation string into list of steps."""
-    # Split by common Vietnamese separators
-    steps = recommendation.replace(";", ",").split(",")
-    return [s.strip() for s in steps if s.strip()]
-
-
 @router.post("/detect")
 async def detect_disease_frontend(
     image: UploadFile = File(..., description="Ảnh lá/thân cây"),
@@ -71,7 +34,7 @@ async def detect_disease_frontend(
     district: str = Form("Điện Biên", description="Huyện/khu vực báo cáo (tùy chọn)"),
     db: Session = Depends(get_db),
 ):
-    """Frontend API: Nhận diện sâu bệnh + lưu báo cáo vào DB."""
+    """Frontend API: Nhận diện sâu bệnh + lưu báo cáo vào bảng disease_detections (hợp nhất)."""
     ext = os.path.splitext(image.filename or "")[1].lower()
     if ext not in ALLOWED_EXT:
         raise HTTPException(400, f"Định dạng ảnh không hỗ trợ: {ext}")
@@ -93,38 +56,32 @@ async def detect_disease_frontend(
     with open(save_path, "wb") as f:
         f.write(content)
 
-    # Call existing service
-    result = detect_disease(save_path, crop_name=cropType)
-
-    # Map to frontend response format
-    disease_key = result["disease_label"].lower().replace(" ", "_").replace("(", "").replace(")", "")
-    if "khỏe" in disease_key or "healthy" in disease_key.lower():
-        disease_key = "healthy"
-
-    scientific_name = _get_scientific_name(disease_key)
-    severity = _get_severity(disease_key, result["confidence"])
-    recommendations = _parse_recommendations(result["recommendation"])
+    # Gọi model thật (MobileNetV2DiseaseModel.predict trả về (disease_key, confidence))
+    model = get_model()
+    disease_key, confidence = model.predict(save_path, crop_name=cropType)
+    disease_name_vi, scientific_name, severity, recommendations = get_disease_display(disease_key)
     image_url = f"/static/uploaded_images/{filename}"
 
-    # Lưu báo cáo vào DB để dashboard GET /disease-report đọc lại
-    record = DiseaseReport(
+    # Lưu vào bảng disease_detections hợp nhất (farm_id=None vì báo cáo officer không gắn farm cụ thể)
+    record = DiseaseDetection(
+        farm_id=None,
         district=district,
         crop_type=cropType,
-        disease_name=result["disease_label"],
+        image_url=image_url,
+        disease_label=disease_name_vi,
         scientific_name=scientific_name,
-        confidence=result["confidence"],
+        confidence=confidence,
         severity=severity,
         affected_plant_count=plant_count,
-        recommendations=json.dumps(recommendations, ensure_ascii=False),
-        image_url=image_url,
+        recommendation="; ".join(recommendations),
     )
     db.add(record)
     db.commit()
 
     return {
-        "diseaseName": result["disease_label"],
+        "diseaseName": disease_name_vi,
         "scientificName": scientific_name,
-        "confidence": result["confidence"],
+        "confidence": confidence,
         "severity": severity,
         "recommendations": recommendations,
         "imageUrl": image_url,
@@ -134,20 +91,19 @@ async def detect_disease_frontend(
 @report_router.get("/disease-report", response_model=DiseaseReportListResponse)
 @report_router.get("/disease-reports", response_model=DiseaseReportListResponse, include_in_schema=False)
 def get_disease_reports(db: Session = Depends(get_db)):
-    """Frontend API: GET /disease-report - dashboard tab officer đọc danh sách báo cáo.
-    Đăng ký thêm alias /disease-reports (số nhiều) phòng trường hợp frontend gọi nhầm
-    tên - cùng trỏ về 1 handler để tránh lệch dữ liệu giữa 2 route.
+    """Frontend API: GET /disease-report - dashboard tab officer đọc danh sách báo cáo,
+    đọc từ bảng disease_detections hợp nhất (bao gồm cả báo cáo tạo qua /detect-disease cũ).
     """
-    rows = db.query(DiseaseReport).order_by(DiseaseReport.reported_at.desc()).all()
+    rows = db.query(DiseaseDetection).order_by(DiseaseDetection.created_at.desc()).all()
     reports = [
         DiseaseReportItem(
             id=row.id,
             district=row.district,
             cropType=row.crop_type,
-            diseaseName=row.disease_name,
-            severity=row.severity,
-            affectedPlantCount=row.affected_plant_count,
-            reportedAt=row.reported_at.isoformat(),
+            diseaseName=row.disease_label,
+            severity=row.severity or "moderate",
+            affectedPlantCount=row.affected_plant_count or 0,
+            reportedAt=row.created_at.isoformat(),
         )
         for row in rows
     ]

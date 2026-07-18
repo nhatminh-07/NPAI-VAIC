@@ -113,11 +113,11 @@ async def get_dashboard_frontend(
         return float(q.scalar() or 0.0)
 
     def get_disease_count(start, end):
-        q = db.query(func.count(DiseaseDetection.id)).join(Farm).filter(
+        q = db.query(func.count(DiseaseDetection.id)).filter(
             DiseaseDetection.created_at >= start, DiseaseDetection.created_at <= end
         )
-        if crop_id:
-            q = q.filter(Farm.crop_id == crop_id)
+        if crop_name:
+            q = q.filter(DiseaseDetection.crop_type == crop_name)
         return int(q.scalar() or 0)
 
     cur_area = get_total_area(current_start, current_end)
@@ -214,8 +214,8 @@ async def get_dashboard_frontend(
         DiseaseDetection.created_at >= current_start,
         DiseaseDetection.created_at <= current_end
     )
-    if crop_id:
-        disease_q = disease_q.join(Farm).filter(Farm.crop_id == crop_id)
+    if crop_name:
+        disease_q = disease_q.filter(DiseaseDetection.crop_type == crop_name)
     diseases = disease_q.all()
 
     disease_count = defaultdict(int)
@@ -249,8 +249,8 @@ async def get_dashboard_frontend(
             DiseaseDetection.created_at >= q_start,
             DiseaseDetection.created_at <= q_end
         )
-        if crop_id:
-            q = q.join(Farm).filter(Farm.crop_id == crop_id)
+        if crop_name:
+            q = q.filter(DiseaseDetection.crop_type == crop_name)
         count = int(q.scalar() or 0)
         disease_trend_data.append({
             "quarterLabel": f"Q{q_num}/{q_year}",
@@ -269,9 +269,7 @@ async def get_dashboard_frontend(
             district_stats[farm.location]["count"] += 1
 
     for d in diseases:
-        farm = farm_by_id.get(d.farm_id)
-        if farm:
-            district_stats[farm.location]["disease"] += 1
+        district_stats[d.district]["disease"] += 1
 
     rankings = []
     for loc, stats in district_stats.items():
