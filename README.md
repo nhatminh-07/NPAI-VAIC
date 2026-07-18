@@ -1,25 +1,73 @@
 # AI Nông Nghiệp Điện Biên
 
-Hệ thống AI hỗ trợ nông nghiệp thông minh cho tỉnh Điện Biên.
+> ⚠️ **Đây là bản DEMO/MVP**, được xây dựng để trình diễn ý tưởng sản phẩm. Dữ liệu (giá nông sản, lịch sử năng suất, tình hình dịch bệnh...) là dữ liệu mẫu/mô phỏng, mô hình AI là mô hình rút gọn dùng cho minh họa. **Không dùng kết quả của hệ thống này để ra quyết định canh tác hay giao dịch thực tế.**
 
-## Các tính năng chính
+Hệ thống AI hỗ trợ nông nghiệp thông minh cho tỉnh Điện Biên, gồm 2 luồng trải nghiệm riêng biệt: **Nông dân** (chẩn đoán bệnh, dự báo năng suất, xem giá) và **Cán bộ nông nghiệp** (dashboard tổng hợp toàn tỉnh).
 
-1. **Nhận diện sâu bệnh** - Upload ảnh lá/thân cây để AI xác định bệnh và đề xuất biện pháp xử lý
-2. **Dự báo năng suất** - Dự đoán sản lượng và thời điểm thu hoạch tối ưu
-3. **Phân tích giá thị trường** - Theo dõi và dự báo xu hướng giá nông sản
-4. **Dashboard so sánh** - So sánh năng suất, diện tích, tỷ lệ sâu bệnh theo quý/năm
+## Mục lục
+
+- [Tính năng chính](#tính-năng-chính)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [Cách chạy](#cách-chạy)
+- [API Endpoints](#api-endpoints)
+- [Deploy](#deploy)
+- [Môi trường](#môi-trường)
+- [Giới hạn của bản demo](#giới-hạn-của-bản-demo)
+
+## Tính năng chính
+
+### 🧑‍🌾 Giao diện Nông dân (`/scan`, `/forecast`, `/prices`)
+
+1. **Chẩn đoán bệnh cây trồng qua ảnh** (`/scan`)
+   - Chụp/tải ảnh lá, thân cây trực tiếp trên điện thoại.
+   - AI xác định bệnh (đạo ôn lúa, bạc lá vi khuẩn, gỉ sắt cà phê, sâu đục quả cà phê, sương mai rau màu, rệp hại rau màu...) kèm mức độ tin cậy.
+   - Hệ thống dựa trên đặc điểm hình thái vết bệnh đặc trưng của từng loại bệnh (màu sắc, hình dạng, vị trí phân bố trên lá) — đây là phương pháp chẩn đoán truyền thống mà các chuyên gia nông nghiệp/bệnh học thực vật vẫn sử dụng ngoài thực địa. Hệ thống được thích ứng và phát triển
+   - Hiển thị mức độ nghiêm trọng (nhẹ/trung bình/nặng) và cảnh báo khi độ tin cậy thấp, yêu cầu chụp lại ảnh rõ hơn.
+   - Đưa ra khuyến nghị xử lý (cách ly cây bệnh, phun thuốc, theo dõi độ ẩm...).
+   - Lưu lại báo cáo chẩn đoán theo từng nông trại (farm).
+
+2. **Dự báo năng suất & thời điểm thu hoạch** (`/forecast`)
+   - Nhập thông tin vụ mùa: loại cây trồng (lúa/cà phê/rau màu), diện tích, ngày gieo trồng, huyện/thị xã.
+   - Mô hình LightGBM dự đoán năng suất (tấn/ha), tổng sản lượng dự kiến, thời điểm thu hoạch tối ưu.
+   - Hiển thị độ tin cậy, mức độ rủi ro (thấp/trung bình/cao) và cơ sở dự báo.
+
+3. **Giá thị trường nông sản** (`/prices`)
+   - Xem giá hiện tại và mức thay đổi trong 7 ngày gần nhất.
+   - Biểu đồ lịch sử giá kết hợp dự báo xu hướng giá (mô hình Holt-Winters) kèm khoảng tin cậy.
+   - Khuyến cáo thông tin chỉ mang tính tham khảo, không phải khuyến nghị mua/bán.
+
+### 🏢 Giao diện Cán bộ nông nghiệp (`/dashboard`)
+
+4. **Dashboard so sánh tổng hợp toàn tỉnh**
+   - So sánh năng suất, sản lượng, tỷ lệ ca bệnh theo quý/năm (so với kỳ trước, so với cùng kỳ năm trước).
+   - Lọc theo kỳ báo cáo và loại cây trồng.
+   - Biểu đồ năng suất theo huyện, biểu đồ số ca bệnh theo loại, biểu đồ xu hướng dịch bệnh theo quý.
+   - Bảng xếp hạng huyện theo năng suất, sản lượng, số ca bệnh (có thể sắp xếp theo cột).
+
+### 🔧 Tính năng backend bổ sung (chưa có giao diện riêng, đã sẵn sàng API)
+
+5. **Đề xuất cây trồng phù hợp** (`/crop/recommend`) — gợi ý loại cây trồng dựa trên thông số đất (N, P, K, pH) và khí hậu (nhiệt độ, độ ẩm, lượng mưa).
+6. **Thời tiết khu vực** (`/weather/current`, `/weather/forecast`) — thời tiết hiện tại và dự báo 7 ngày cho khu vực Điện Biên.
+
+### 🎛️ Trải nghiệm chung
+
+- Màn hình chọn vai trò (Nông dân / Cán bộ) khi mở ứng dụng.
+- Giao diện tối ưu cho thiết bị di động, chuyển trang mượt (page transition).
+- Trạng thái tải (skeleton loading), trạng thái rỗng, trạng thái lỗi khi không kết nối được máy chủ.
 
 ## Công nghệ sử dụng
 
 ### Backend
 - **FastAPI** - API framework
 - **SQLAlchemy** - ORM (hỗ trợ SQLite/PostgreSQL)
-- **LightGBM** - Dự báo năng suất
-- **Holt-Winters** - Dự báo giá thị trường
+- **LightGBM / scikit-learn** - Dự báo năng suất, đề xuất cây trồng
+- **Statsmodels (Holt-Winters)** - Dự báo giá thị trường
+- **Pillow / NumPy / Pandas** - Xử lý ảnh và dữ liệu
 
 ### Frontend
-- **Next.js 14** - React framework (App Router)
-- **TypeScript** - Type safety
+- **Next.js 15** - React framework (App Router)
+- **React 19** & **TypeScript** - UI & type safety
 - **TailwindCSS** - Styling
 - **Recharts** - Biểu đồ và visualization
 
@@ -34,17 +82,20 @@ NPAI-VAIC/
 │   │   ├── database.py     # Database connection
 │   │   ├── models.py       # SQLAlchemy models
 │   │   ├── schemas.py      # Pydantic schemas
-│   │   ├── routers/        # API endpoints
-│   │   ├── services/       # Business logic
-│   │   └── ml/             # ML models & data
+│   │   ├── routers/        # API endpoints (disease, yield, price, dashboard, crop, weather...)
+│   │   ├── services/       # Business logic & mô hình dự báo/đề xuất
+│   │   └── ml/             # ML models & dữ liệu huấn luyện
 │   ├── seed_data.py        # Seed dữ liệu mẫu
 │   └── requirements.txt
 │
 └── frontend/                 # Next.js Frontend
-    ├── app/                # App Router
-    ├── components/         # React components
-    ├── lib/                # Utilities & API client
-    └── public/             # Static assets
+    ├── src/app/
+    │   ├── (farmer)/        # Luồng nông dân: scan, forecast, prices
+    │   └── (officer)/       # Luồng cán bộ: dashboard
+    ├── src/components/      # React components (UI & layout)
+    ├── src/constants/       # Copy tiếng Việt, danh sách cây trồng/huyện
+    ├── src/lib/             # Utilities & API client
+    └── public/              # Static assets
 ```
 
 ## Cách chạy
@@ -54,7 +105,7 @@ NPAI-VAIC/
 ```bash
 cd backend
 
-# Tạo virtual environment ( PHẢI DÙNG PYTHON CÓ VER =< 12)
+# Tạo virtual environment (PHẢI DÙNG PYTHON CÓ VER =< 12)
 python -m venv venv
 source venv/Scripts/activate  # Linux/Mac
 # hoặc
@@ -90,10 +141,16 @@ Mở: **http://localhost:3000**
 
 | Endpoint | Method | Mô tả |
 |----------|--------|-------|
-| `/detect-disease` | POST | Nhận diện sâu bệnh từ ảnh |
-| `/predict-yield` | POST | Dự báo năng suất |
-| `/market-price` | GET | Lấy giá thị trường |
+| `/detect-disease` | POST | Nhận diện sâu bệnh từ ảnh (API gốc, có lưu DB) |
+| `/predict-yield` | POST | Dự báo năng suất (API gốc, có lưu DB) |
+| `/market-price` | GET | Lấy giá thị trường (API gốc) |
+| `/detect` | POST | Nhận diện sâu bệnh (API cho frontend) |
+| `/predict` | POST | Dự báo năng suất (API cho frontend) |
+| `/price` | GET | Giá thị trường (API cho frontend) |
 | `/dashboard` | GET | Dashboard so sánh kỳ |
+| `/crop/recommend` | POST | Đề xuất cây trồng theo thông số đất/khí hậu |
+| `/weather/current` | GET | Thời tiết hiện tại |
+| `/weather/forecast` | GET | Dự báo thời tiết 7 ngày |
 
 ## Deploy
 
@@ -123,3 +180,12 @@ CORS_ORIGINS=http://localhost:3000
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
+
+## Giới hạn của bản demo
+
+- Đây là **MVP phục vụ mục đích trình diễn**, chưa phải sản phẩm hoàn chỉnh cho môi trường production.
+- Mô hình nhận diện bệnh cây dùng mô hình rút gọn; các thư viện deep learning đầy đủ (`transformers`, `torch`, `torchvision`) đang được **để tắt** trong `requirements.txt` để tránh lỗi khi chạy demo trên Windows.
+- Dữ liệu giá thị trường, lịch sử năng suất, số liệu dashboard là **dữ liệu mẫu** (seed data), chưa kết nối nguồn dữ liệu thật của tỉnh.
+- Ảnh chẩn đoán bệnh hiện lưu cục bộ trên máy chủ (`uploaded_images/`); môi trường production nên chuyển sang dịch vụ lưu trữ đối tượng (Supabase Storage/CDN...).
+- Tính năng đề xuất cây trồng và thời tiết đã có API backend nhưng **chưa có giao diện người dùng** tương ứng.
+- Bản đồ nhiệt (heatmap) vùng bệnh trên ảnh chẩn đoán dự kiến bổ sung ở phiên bản tiếp theo.
