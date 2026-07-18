@@ -1,5 +1,10 @@
 'use client';
 
+// Dropdown chọn 1 giá trị, tự vẽ lại từ đầu (không dùng thẻ <select> gốc của trình
+// duyệt) để có thể chỉnh giao diện (bo góc, màu sắc, icon...) theo đúng theme của app -
+// thẻ <select> gốc không cho phép style phần danh sách option khi mở ra.
+// Dùng cho: chọn loại cây trồng, chọn huyện, chọn kỳ báo cáo (quý/năm)...
+
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -71,10 +76,14 @@ export function Select({ id, value, onChange, options, className = '', ...rest }
     );
   }, [open]);
 
+  // Đóng dropdown khi: bấm ra ngoài, nhấn Escape, hoặc cuộn/resize trang.
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(e: MouseEvent) {
       const target = e.target as Node;
+      // Lưu ý: panel được portal ra ngoài <body> (xem bên dưới), nên KHÔNG nằm trong
+      // containerRef - phải kiểm tra thêm panelRef, nếu không thì bấm chọn 1 option
+      // sẽ bị coi là "bấm ra ngoài" và đóng dropdown trước khi kịp xử lý click chọn.
       if (containerRef.current?.contains(target)) return;
       if (panelRef.current?.contains(target)) return;
       setOpen(false);

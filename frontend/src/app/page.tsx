@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { copy } from '@/constants/copy';
 import { Logo } from '@/components/ui/Logo';
 
+// Màn hình đầu tiên người dùng thấy: chọn vào luồng "nông dân" (/scan, dùng
+// FarmerShell) hay "cán bộ nông nghiệp" (/dashboard, dùng OfficerShell). Đây KHÔNG
+// phải đăng nhập thật - chỉ là điều hướng theo vai trò, không có xác thực/phân quyền.
 function RoleCard({
   href,
   icon,

@@ -6,10 +6,14 @@ import { usePathname } from 'next/navigation';
 import { copy } from '@/constants/copy';
 import { Logo } from '@/components/ui/Logo';
 
+// Khung giao diện dùng chung cho các trang dành cho CÁN BỘ NÔNG NGHIỆP (/dashboard,
+// /disease-report) - dạng desktop: thanh điều hướng cố định bên trái (sidebar), nội
+// dung trang cuộn độc lập bên phải. Áp dụng qua app/(officer)/layout.tsx.
 interface OfficerShellProps {
   children: ReactNode;
 }
 
+// Danh sách mục điều hướng trong sidebar. Thêm trang mới cho cán bộ thì thêm vào đây.
 const navItems = [
   {
     to: '/dashboard',
@@ -35,6 +39,11 @@ export function OfficerShell({ children }: OfficerShellProps) {
   const pathname = usePathname();
 
   return (
+    // Quan trọng: `h-svh overflow-hidden` (thay vì min-h-svh) để container này có
+    // chiều cao CỐ ĐỊNH bằng màn hình. Nhờ đó sidebar luôn đứng yên (nút "Đổi vai trò"
+    // luôn thấy được), còn nội dung chính bên phải tự cuộn riêng qua overflow-y-auto ở
+    // <main>. Nếu đổi lại thành min-h-svh, cả trang sẽ cuộn chung và sidebar bị cuốn
+    // theo khi nội dung dashboard dài.
     <div className="flex h-svh overflow-hidden bg-plane">
       <aside className="relative flex h-full w-64 shrink-0 flex-col border-r border-line-border bg-gradient-to-b from-surface to-brand-50/30">
         <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 via-teal-600 to-brand-700" />

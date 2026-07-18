@@ -1,4 +1,6 @@
-// Single source of truth for all Vietnamese user-facing copy.
+// Nguồn duy nhất chứa toàn bộ văn bản tiếng Việt hiển thị cho người dùng.
+// Các trang/component KHÔNG được viết chuỗi tiếng Việt trực tiếp trong JSX - luôn
+// import và dùng qua object `copy` này, để dễ rà soát/sửa nội dung ở một chỗ duy nhất.
 
 export const copy = {
   appName: 'AgriPlatform',
@@ -154,6 +156,8 @@ export const copy = {
     thinking: 'Đang trả lời...',
     emptyHint: 'Xin chào! Tôi có thể giúp gì cho bạn? Thử một gợi ý bên dưới hoặc tự đặt câu hỏi.',
     errorMessage: 'Không thể nhận phản hồi từ trợ lý. Vui lòng thử lại.',
+    // Các câu gợi ý nhanh, hiển thị dạng nút bấm khi khung chat chưa có tin nhắn nào.
+    // Bấm vào 1 gợi ý sẽ gửi luôn câu đó đi (xem ChatWidget.tsx).
     hints: [
       'Tóm tắt những sự kiện trong quý 3 năm 2025',
       'Tình hình sâu bệnh gần đây thế nào?',

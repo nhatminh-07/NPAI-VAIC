@@ -1,11 +1,17 @@
-// Shared API contract types. The frontend and (future) backend both implement this contract.
+// Định nghĩa kiểu dữ liệu (contract) dùng chung giữa frontend và backend cho mọi API.
+// Mỗi khi backend đổi hình dạng response, cần cập nhật lại các interface tương ứng ở đây
+// để TypeScript báo lỗi ngay tại các nơi frontend đang dùng sai dữ liệu.
 
-// ---------- Common ----------
+// ---------- Kiểu dùng chung ----------
 
+// Mức độ nghiêm trọng của bệnh trên cây - dùng cho cả kết quả chẩn đoán (mục 1)
+// và báo cáo sâu bệnh của cán bộ (mục 4b).
 export type Severity = 'healthy' | 'mild' | 'moderate' | 'severe';
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
+// 3 loại cây trồng mà hệ thống hỗ trợ. Nếu backend hỗ trợ thêm loại cây mới,
+// phải thêm giá trị vào đây VÀ vào constants/crops.ts (danh sách hiển thị cho người dùng).
 export type CropType = 'rice' | 'coffee' | 'vegetable';
 
 export interface Crop {
@@ -14,18 +20,18 @@ export interface Crop {
   nameVi: string;
 }
 
-// ---------- 1. Disease detection ----------
+// ---------- 1. Nhận diện bệnh cây (trang /scan) ----------
 
 export interface DiseaseDetectionResult {
   diseaseName: string;
   scientificName: string;
-  confidence: number; // 0..1
+  confidence: number; // 0..1 - độ tin cậy của model, dưới 0.6 thì FE hiển thị cảnh báo
   severity: Severity;
-  recommendations: string[];
+  recommendations: string[]; // danh sách khuyến nghị xử lý, hiển thị dạng checklist
   imageUrl: string;
 }
 
-// ---------- 2. Yield & harvest-window forecast ----------
+// ---------- 2. Dự báo năng suất & thời điểm thu hoạch (trang /forecast) ----------
 
 export interface YieldInput {
   cropType: CropType;
@@ -34,6 +40,8 @@ export interface YieldInput {
   district: string;
 }
 
+// So sánh thời tiết hiện tại với điều kiện tối ưu cho loại cây đang trồng.
+// Backend trả về nhưng trang /forecast hiện CHƯA hiển thị các trường này lên UI.
 export interface WeatherComparison {
   current: {
     temperature: number;
@@ -52,10 +60,12 @@ export interface WeatherComparison {
   };
 }
 
+// Thông tin về giai đoạn sinh trưởng của cây trồng đang dự báo.
+// Backend trả về nhưng trang /forecast hiện CHƯA hiển thị các trường này lên UI.
 export interface CropInfo {
   name_vi: string;
-  growth_days: number;
-  days_since_planting: number;
+  growth_days: number; // tổng số ngày sinh trưởng dự kiến của giống cây
+  days_since_planting: number; // số ngày đã trồng tính đến thời điểm gọi API
   notes: string;
 }
 
@@ -67,18 +77,20 @@ export interface YieldForecastResult {
   confidence: number; // 0..1
   risk: RiskLevel;
   riskNote: string;
-  rationale: string[];
+  rationale: string[]; // giải thích căn cứ đưa ra dự báo, hiển thị dạng danh sách
 
-  // Extended fields
+  // Các trường mở rộng (bổ sung sau bản đầu) - liên quan đến thời tiết/tiến độ sinh
+  // trưởng thực tế. Kiểu đã khớp với response của backend nhưng UI /forecast hiện
+  // chưa render các trường này (còn lại cho phiên bản sau).
   currentWeather: CurrentWeather;
   weatherComparison: WeatherComparison;
   harvestAdvice: 'optimal' | 'normal' | 'prepare_harvest' | 'harvest_early' | 'monitor';
   harvestAdviceNote: string;
-  remainingDays: number;
+  remainingDays: number; // số ngày còn lại ước tính đến thời điểm nên thu hoạch
   cropInfo: CropInfo;
 }
 
-// ---------- 3. Market price ----------
+// ---------- 3. Giá thị trường (trang /prices) ----------
 
 export interface PriceHistoryPoint {
   date: string; // ISO date
@@ -88,30 +100,30 @@ export interface PriceHistoryPoint {
 export interface PriceForecastPoint {
   date: string; // ISO date
   price: number; // VND per unit
-  lowerBand: number;
-  upperBand: number;
+  lowerBand: number; // cận dưới khoảng dự báo, dùng vẽ dải tin cậy trên biểu đồ
+  upperBand: number; // cận trên khoảng dự báo
 }
 
 export interface MarketPriceResult {
   cropId: number;
   cropName: string;
-  unit: string; // e.g. "VND/kg"
-  history: PriceHistoryPoint[];
-  forecast: PriceForecastPoint[];
+  unit: string; // vd "VND/kg"
+  history: PriceHistoryPoint[]; // giá lịch sử (đường liền nét trên biểu đồ)
+  forecast: PriceForecastPoint[]; // giá dự báo (đường đứt nét + dải tin cậy)
   currentPrice: number;
   change7dPercent: number;
-  trendLabel: string; // Vietnamese, neutral (no buy/sell advice)
+  trendLabel: string; // tiếng Việt, trung lập (không phải khuyến nghị mua/bán)
 }
 
-// ---------- 4. Period-comparison dashboard ----------
+// ---------- 4. Dashboard so sánh theo kỳ (trang /dashboard, dành cho cán bộ) ----------
 
 export interface KpiValue {
   id: string;
   labelVi: string;
   value: number;
   unit: string;
-  qoqDeltaPercent: number;
-  yoyDeltaPercent: number;
+  qoqDeltaPercent: number; // % thay đổi so với quý trước (quarter-over-quarter)
+  yoyDeltaPercent: number; // % thay đổi so với cùng kỳ năm trước (year-over-year)
 }
 
 export interface DistrictYield {
@@ -139,8 +151,8 @@ export interface DistrictRanking {
 }
 
 export interface DashboardResult {
-  period: string;
-  cropId?: number;
+  period: string; // vd "2026-Q3", khớp với QuarterOption.value ở constants/periods.ts
+  cropId?: number; // undefined nghĩa là lọc "tất cả cây trồng"
   kpis: KpiValue[];
   districtYield: DistrictYield[];
   diseaseCases: DiseaseCaseCount[];
@@ -148,7 +160,9 @@ export interface DashboardResult {
   districtRankings: DistrictRanking[];
 }
 
-// ---------- 4b. Disease/pest report (báo cáo sâu bệnh) ----------
+// ---------- 4b. Báo cáo sâu bệnh (trang /disease-report, dành cho cán bộ) ----------
+// Danh sách các lượt chẩn đoán/báo cáo sâu bệnh (mỗi lượt nông dân dùng trang /scan sẽ
+// tạo ra 1 bản ghi ở đây). Xem chi tiết API contract tại getDiseaseReport() trong lib/api.ts.
 
 export interface DiseaseReportEntry {
   id: number;
@@ -156,7 +170,7 @@ export interface DiseaseReportEntry {
   cropType: CropType;
   diseaseName: string;
   severity: Severity;
-  affectedPlantCount: number;
+  affectedPlantCount: number; // số cây bị ảnh hưởng, nông dân tự nhập khi báo cáo
   reportedAt: string; // ISO date
 }
 
@@ -164,7 +178,7 @@ export interface DiseaseReportResult {
   reports: DiseaseReportEntry[];
 }
 
-// ---------- 5. Crop recommendation ----------
+// ---------- 5. Gợi ý cây trồng (crop recommendation) ----------
 
 export interface CropRecommendationResult {
   recommendedCrop: string;
@@ -176,7 +190,7 @@ export interface CropRecommendationResult {
   confidence: number;
 }
 
-// ---------- 6. Weather ----------
+// ---------- 6. Thời tiết ----------
 
 export interface CurrentWeather {
   temperature: number;
@@ -204,7 +218,7 @@ export interface WeatherForecastResult {
   forecast: DailyForecast[];
 }
 
-// ---------- 7. AI Assistant (chatbot) ----------
+// ---------- 7. Trợ lý AI (chatbot) ----------
 // Xem chú thích chi tiết cho backend engineer tại hàm sendChatMessage() trong src/lib/api.ts
 
 export interface ChatMessage {

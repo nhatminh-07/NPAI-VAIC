@@ -1,11 +1,14 @@
 import Image from 'next/image';
 import { copy } from '@/constants/copy';
 
+// Logo ứng dụng (ảnh public/icon.png), dùng ở header các trang và màn chọn vai trò.
 interface LogoProps {
-  withWordmark?: boolean;
+  withWordmark?: boolean; // true = hiển thị kèm tên app bên cạnh icon
   className?: string;
   markClassName?: string;
-  /** Pixel size of the mark. Also sets the requested image resolution, so larger sizes stay crisp. */
+  /** Kích thước icon tính bằng px. Cũng chính là độ phân giải ảnh yêu cầu Next.js
+   * tối ưu ra, nên khi phóng to (vd size={96} ở màn chọn vai trò) ảnh vẫn nét,
+   * không bị mờ do phóng to 1 ảnh đã tối ưu ở độ phân giải nhỏ. */
   size?: number;
 }
 

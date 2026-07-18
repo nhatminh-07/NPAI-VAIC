@@ -1,3 +1,6 @@
+// Vòng xoay loading đơn giản, dùng cho các thao tác chờ ngắn (đang phân tích ảnh,
+// đang tính dự báo...). Với màn có nhiều khối nội dung (dashboard) nên dùng Skeleton
+// thay vì Spinner để trải nghiệm mượt hơn.
 interface SpinnerProps {
   label?: string;
 }

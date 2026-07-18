@@ -1,8 +1,11 @@
+// Thanh hiển thị độ tin cậy (confidence) của model AI, dùng ở kết quả chẩn đoán bệnh.
 interface ConfidenceBarProps {
   confidence: number; // 0..1
   label: string;
 }
 
+// Ngưỡng màu: >=85% xanh lá (đáng tin), 60-85% vàng (cảnh báo nhẹ), <60% đỏ (nên chụp
+// lại ảnh - xem cảnh báo lowConfidenceWarning ở trang /scan).
 function toneFor(confidence: number): { bar: string; text: string } {
   if (confidence >= 0.85) return { bar: 'bg-brand-600', text: 'text-brand-700' };
   if (confidence >= 0.6) return { bar: 'bg-status-warning', text: 'text-[#8a5a00]' };

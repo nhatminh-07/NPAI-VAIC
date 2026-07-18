@@ -28,11 +28,18 @@ const cropOptions: { value: CropType; label: string }[] = [
   { value: 'vegetable', label: copy.forecast.crop.vegetable },
 ];
 
+// Định dạng ngày ISO (backend trả về) sang dạng tiếng Việt (dd/mm/yyyy) để hiển thị.
 function formatDateVi(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('vi-VN');
 }
 
+// Trang dự báo năng suất & thời điểm thu hoạch: nông dân nhập thông tin vụ mùa (loại
+// cây, diện tích, ngày gieo trồng, huyện), backend trả về năng suất/sản lượng dự kiến
+// và cửa sổ thời gian nên thu hoạch.
+// Lưu ý: YieldForecastResult (types/api.ts) có thêm các trường mở rộng về thời tiết
+// (currentWeather, weatherComparison, harvestAdvice...) mà trang này CHƯA hiển thị -
+// nếu cần bổ sung UI cho các trường đó thì bổ sung ở khối "status === 'success'" bên dưới.
 export default function ForecastPage() {
   const [form, setForm] = useState<YieldInput>({
     cropType: 'rice',
@@ -45,6 +52,8 @@ export default function ForecastPage() {
   const [result, setResult] = useState<YieldForecastResult | null>(null);
   const [offline, setOffline] = useState(false);
 
+  // Validate form phía client TRƯỚC khi gọi API, để không tốn round-trip cho dữ liệu
+  // rõ ràng sai. cropType/district luôn hợp lệ vì chọn từ dropdown, không cần validate.
   const errors = useMemo(() => {
     const e: { areaHa?: string; plantingDate?: string } = {};
     if (!(form.areaHa > 0)) e.areaHa = copy.forecast.areaError;

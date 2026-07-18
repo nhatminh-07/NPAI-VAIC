@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 
+// Nhãn tròn nhỏ hiển thị mức độ (bệnh nhẹ/nặng, rủi ro cao/thấp...) kèm màu sắc + icon
+// ngữ nghĩa tương ứng. Dùng ở kết quả chẩn đoán bệnh, kết quả dự báo năng suất, và
+// bảng báo cáo sâu bệnh.
 export type BadgeTone = 'good' | 'warning' | 'serious' | 'critical' | 'neutral';
 
 interface BadgeProps {

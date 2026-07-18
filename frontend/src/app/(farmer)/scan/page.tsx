@@ -14,8 +14,10 @@ import { copy } from '@/constants/copy';
 import { ApiError, detectDisease } from '@/lib/api';
 import type { CropType, DiseaseDetectionResult, Severity } from '@/types/api';
 
+// idle = chưa phân tích, loading = đang gọi API, success = có kết quả, error = gọi lỗi.
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+// Ánh xạ mức độ bệnh (trả về từ backend) sang màu Badge tương ứng.
 const severityTone: Record<Severity, BadgeTone> = {
   healthy: 'good',
   mild: 'warning',
@@ -23,12 +25,16 @@ const severityTone: Record<Severity, BadgeTone> = {
   severe: 'critical',
 };
 
+// Danh sách loại cây trồng cho dropdown "Loại cây trồng" - dùng chung format với
+// forecast/page.tsx (copy.forecast.crop.*) để tránh lặp chuỗi dịch.
 const cropOptions: { value: CropType; label: string }[] = [
   { value: 'rice', label: copy.forecast.crop.rice },
   { value: 'coffee', label: copy.forecast.crop.coffee },
   { value: 'vegetable', label: copy.forecast.crop.vegetable },
 ];
 
+// Trang chẩn đoán bệnh cây (nông dân chụp/tải ảnh lá cây lên, kèm loại cây trồng và
+// số cây bị ảnh hưởng, để backend chẩn đoán bệnh + gợi ý cách xử lý).
 export default function ScanPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -42,9 +48,14 @@ export default function ScanPage() {
   const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Hợp lệ khi đã nhập và > 0. Lưu ý: chỉ HIỂN THỊ lỗi này khi `touched` = true (sau
+  // khi người dùng đã bấm "Phân tích" ít nhất 1 lần), để không báo lỗi ngay khi vừa
+  // chọn ảnh xong mà chưa kịp nhập gì.
   const affectedPlantCountError =
     affectedPlantCount !== '' && Number(affectedPlantCount) > 0 ? undefined : copy.scan.affectedPlantCountError;
 
+  // Dùng chung cho cả 2 luồng chọn ảnh: kéo-thả (handleDrop) và bấm chọn file
+  // (handleFileChange). Reset kết quả/trạng thái cũ vì đây coi như 1 lượt chẩn đoán mới.
   function selectFile(selected: File) {
     setFile(selected);
     setPreviewUrl(URL.createObjectURL(selected));
@@ -67,7 +78,7 @@ export default function ScanPage() {
 
   async function handleAnalyze() {
     if (!file) return;
-    setTouched(true);
+    setTouched(true); // bật hiển thị lỗi validate (nếu có) từ giờ trở đi
     if (affectedPlantCountError) return;
     setStatus('loading');
     try {
@@ -80,6 +91,9 @@ export default function ScanPage() {
     }
   }
 
+  // Dùng lại cho cả 3 nút "Lưu báo cáo" / "Chụp lại" / "Bỏ qua": báo cáo đã được
+  // backend lưu lại NGAY khi gọi detectDisease() thành công (không cần gọi API lần 2
+  // để "lưu"), nên cả 3 nút chỉ cần đưa người dùng quay về màn chọn ảnh ban đầu.
   function handleRetake() {
     setFile(null);
     setPreviewUrl(null);
@@ -134,6 +148,8 @@ export default function ScanPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewUrl} alt="Ảnh cây trồng đã chọn" className="max-h-80 w-full object-cover" />
               {status === 'success' && (
+                // Placeholder cho tính năng bản đồ nhiệt (khoanh vùng bị bệnh trên ảnh) -
+                // backend/model chưa hỗ trợ, chỉ hiện dòng chữ báo "sẽ có ở bản sau".
                 <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
                   {copy.scan.heatmapPlaceholder}
                 </span>

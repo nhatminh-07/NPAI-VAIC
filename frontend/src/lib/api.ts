@@ -13,13 +13,19 @@ import type {
   WeatherForecastResult,
 } from '@/types/api';
 
-// The only module aware of the backend's transport details (base URL, HTTP
-// verbs, error shape). Pages only ever call the functions exported here.
+// Module DUY NHẤT của frontend biết chi tiết giao tiếp với backend (base URL, phương
+// thức HTTP, hình dạng lỗi trả về). Các trang (page) không bao giờ gọi fetch() trực
+// tiếp - chỉ gọi các hàm export ở file này. Nhờ vậy khi backend đổi endpoint/contract,
+// chỉ cần sửa ở đây, không phải sửa rải rác trong từng trang.
 
+// Ưu tiên biến môi trường NEXT_PUBLIC_API_BASE_URL (hoặc NEXT_PUBLIC_API_URL cũ),
+// fallback về localhost:8000 khi chạy dev mà chưa cấu hình .env.local.
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
 export class ApiError extends Error {
-  /** true when the request never reached the server (network/DNS/CORS failure) */
+  /** true khi request không tới được server (mất mạng/DNS lỗi/CORS chặn...),
+   * false khi server có phản hồi nhưng trả về status lỗi (4xx/5xx).
+   * Các trang dùng cờ này để phân biệt "chưa kết nối được máy chủ" và "lỗi khác". */
   offline: boolean;
 
   constructor(message: string, offline: boolean) {
@@ -29,6 +35,8 @@ export class ApiError extends Error {
   }
 }
 
+// Hàm fetch dùng chung cho mọi API call bên dưới: tự thêm base URL, tự bắt lỗi mạng
+// và lỗi HTTP status rồi quy về cùng 1 kiểu ApiError để các trang xử lý thống nhất.
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -42,6 +50,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+// Gửi ảnh + thông tin kèm theo để backend chẩn đoán bệnh cây (trang /scan).
+// Dùng multipart/form-data vì có kèm file ảnh.
 export async function detectDisease(file: File, cropType: CropType, affectedPlantCount: number): Promise<DiseaseDetectionResult> {
   const formData = new FormData();
   formData.append('image', file);
@@ -53,6 +63,9 @@ export async function detectDisease(file: File, cropType: CropType, affectedPlan
   });
 }
 
+// Lấy danh sách báo cáo sâu bệnh cho trang /disease-report (cán bộ nông nghiệp).
+// Kiểu `raw` khai báo mọi field là optional (`?`) vì không chắc backend luôn trả đủ
+// - nếu thiếu field `reports`, ta coi như danh sách rỗng (`?? []`) thay vì throw lỗi.
 export async function getDiseaseReport(): Promise<DiseaseReportResult> {
   const raw = await request<{
     reports?: Array<{
@@ -69,6 +82,7 @@ export async function getDiseaseReport(): Promise<DiseaseReportResult> {
   return { reports: raw.reports ?? [] };
 }
 
+// Dự báo năng suất & thời điểm thu hoạch (trang /forecast).
 export async function predictYield(input: YieldInput): Promise<YieldForecastResult> {
   return request<YieldForecastResult>('/yield/predict', {
     method: 'POST',
@@ -77,11 +91,16 @@ export async function predictYield(input: YieldInput): Promise<YieldForecastResu
   });
 }
 
+// Lấy giá thị trường (lịch sử + dự báo) cho 1 loại cây trồng (trang /prices).
 export async function getMarketPrice(cropId: number): Promise<MarketPriceResult> {
   const params = new URLSearchParams({ cropId: String(cropId) });
   return request<MarketPriceResult>(`/market/price?${params.toString()}`);
 }
 
+// Lấy dữ liệu tổng hợp cho dashboard cán bộ (trang /dashboard), theo kỳ báo cáo
+// (quý/năm) và tuỳ chọn lọc theo 1 loại cây trồng cụ thể.
+// Cũng như getDiseaseReport(), mọi field trong `raw` là optional để phòng backend
+// trả thiếu - khi đó FE tự điền mảng rỗng thay vì crash khi render (`?? []`).
 export async function getDashboard(period: string, cropId?: number): Promise<DashboardResult> {
   const params = new URLSearchParams({ period });
   if (cropId !== undefined) params.set('cropId', String(cropId));
@@ -130,6 +149,8 @@ export async function getDashboard(period: string, cropId?: number): Promise<Das
   };
 }
 
+// N/P/K = hàm lượng Đạm/Lân/Kali trong đất (đơn vị theo chuẩn backend, thường là mg/kg),
+// ph = độ pH đất. Dùng cho tính năng gợi ý cây trồng phù hợp dựa trên điều kiện đất/khí hậu.
 export interface CropRecommendInput {
   N: number;
   P: number;
@@ -140,6 +161,9 @@ export interface CropRecommendInput {
   rainfall: number;
 }
 
+// Gợi ý loại cây trồng phù hợp dựa trên thông số đất + khí hậu đầu vào.
+// Response backend bọc trong { success, data } - hàm này chỉ trả về phần `data`
+// cho gọn, các trang gọi hàm không cần quan tâm field `success`.
 export async function recommendCrop(input: CropRecommendInput): Promise<CropRecommendationResult> {
   const res = await request<{ success: boolean; data: CropRecommendationResult }>('/crop/recommend', {
     method: 'POST',
@@ -149,6 +173,8 @@ export async function recommendCrop(input: CropRecommendInput): Promise<CropReco
   return res.data;
 }
 
+// Lấy thời tiết hiện tại. lat/lon để trống thì backend tự dùng toạ độ mặc định
+// (khu vực Điện Biên).
 export async function getCurrentWeather(lat?: number, lon?: number): Promise<CurrentWeather> {
   const params = new URLSearchParams();
   if (lat !== undefined) params.set('lat', String(lat));
@@ -158,6 +184,7 @@ export async function getCurrentWeather(lat?: number, lon?: number): Promise<Cur
   return res.data;
 }
 
+// Lấy dự báo thời tiết nhiều ngày tới, cùng quy ước lat/lon như getCurrentWeather().
 export async function getWeatherForecast(lat?: number, lon?: number): Promise<WeatherForecastResult> {
   const params = new URLSearchParams();
   if (lat !== undefined) params.set('lat', String(lat));

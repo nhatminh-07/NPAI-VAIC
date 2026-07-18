@@ -25,6 +25,8 @@ const cropLabel: Record<DiseaseReportEntry['cropType'], string> = {
   vegetable: copy.forecast.crop.vegetable,
 };
 
+// Kiểm tra ngày hợp lệ (Number.isNaN) vì dữ liệu đến từ backend - nếu backend gửi
+// chuỗi ngày sai định dạng, hiển thị nguyên chuỗi gốc thay vì crash hoặc hiện "Invalid Date".
 function formatDateVi(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('vi-VN');
@@ -39,6 +41,9 @@ function ReportSkeleton() {
   );
 }
 
+// Trang danh sách báo cáo sâu bệnh dành cho cán bộ: mỗi dòng tương ứng với 1 lượt
+// nông dân chẩn đoán bệnh qua trang /scan (kèm số cây bị ảnh hưởng nông dân tự khai).
+// Chưa có phân trang/lọc - hiển thị toàn bộ danh sách backend trả về.
 export default function DiseaseReportPage() {
   const [status, setStatus] = useState<Status>('idle');
   const [reports, setReports] = useState<DiseaseReportEntry[]>([]);

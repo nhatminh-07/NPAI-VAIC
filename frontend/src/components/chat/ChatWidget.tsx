@@ -21,10 +21,14 @@ export function ChatWidget() {
   const [offline, setOffline] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Tự cuộn xuống cuối khung chat mỗi khi có tin nhắn mới, đổi trạng thái, hoặc mở lại khung chat.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, status, open]);
 
+  // Gửi 1 tin nhắn: thêm ngay tin nhắn của người dùng vào khung chat (hiển thị tức
+  // thì, không chờ backend), rồi gọi API kèm `history` (toàn bộ hội thoại TRƯỚC câu
+  // hỏi này) để backend hiểu ngữ cảnh nếu người dùng hỏi tiếp câu liên quan.
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || status === 'loading') return;
@@ -125,6 +129,8 @@ export function ChatWidget() {
             )}
           </div>
 
+          {/* Gợi ý nhanh chỉ hiện khi CHƯA có tin nhắn nào - giúp người dùng biết nên hỏi
+              gì mà không cần gõ tay; bấm vào 1 gợi ý sẽ gửi luôn câu đó. */}
           {messages.length === 0 && (
             <div className="flex shrink-0 flex-wrap gap-2 border-t border-line-border px-3 py-2">
               {copy.chat.hints.map((hint) => (

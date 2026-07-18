@@ -1,5 +1,8 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
+// Nút bấm dùng chung cho toàn app - đảm bảo mọi nút có cùng chiều cao tối thiểu
+// (min-h-[44px], chuẩn kích thước chạm cho mobile), cùng hiệu ứng bấm/focus, và
+// cùng bảng màu theo variant thay vì mỗi trang tự viết class riêng.
 type Variant = 'primary' | 'secondary' | 'ghost';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

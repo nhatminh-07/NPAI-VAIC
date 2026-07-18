@@ -7,10 +7,17 @@ import { copy } from '@/constants/copy';
 import { Logo } from '@/components/ui/Logo';
 import { PageTransition } from '@/components/layout/PageTransition';
 
+// Khung giao diện dùng chung cho các trang dành cho NÔNG DÂN (/scan, /forecast,
+// /prices) - dạng mobile-first: header cố định phía trên, thanh điều hướng (tab bar)
+// cố định phía dưới, nội dung trang cuộn ở giữa. Áp dụng qua app/(farmer)/layout.tsx
+// (route group "(farmer)" trong Next.js App Router).
 interface FarmerShellProps {
   children: ReactNode;
 }
 
+// Danh sách tab điều hướng dưới cùng, đúng theo thứ tự hiển thị trái→phải. Thứ tự này
+// cũng được PageTransition.tsx dùng để tính chiều trượt (trượt phải khi chuyển sang
+// tab bên phải, trượt trái khi quay lại tab bên trái).
 const tabs = [
   {
     to: '/scan',
