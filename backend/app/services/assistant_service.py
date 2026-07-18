@@ -193,6 +193,11 @@ def build_reply(db: Session, message: str, history: list[dict]) -> str:
     có xét ngữ cảnh hội thoại (history). Nếu bước này lỗi (mạng, timeout,
     quota...), lặng lẽ fallback về kết quả rule-based của bước 1.
     """
+    # Kiểm tra câu hỏi về khả năng của chatbot
+    msg_lower = message.lower()
+    if any(phrase in msg_lower for phrase in ["bạn có thể làm gì", "bạn làm được gì", "chức năng", "khả năng", "bạn có thể giúp gì"]):
+        return _CAPABILITIES_ANSWER
+
     context_text = _resolve_context(message, history)
     (start, end), period_label = _extract_period(context_text)
     crop_name = _extract_crop(context_text)
@@ -235,12 +240,20 @@ def build_reply(db: Session, message: str, history: list[dict]) -> str:
 
 _SYSTEM_PROMPT = (
     "Bạn là trợ lý AI của hệ thống AI Nông Nghiệp Điện Biên, hỗ trợ cán bộ/"
-    "nông dân tra cứu tình hình sâu bệnh, năng suất và giá thị trường nông sản. "
-    "Bạn CHỈ được dùng số liệu trong phần 'Dữ liệu tra cứu được' dưới đây để trả lời, "
-    "TUYỆT ĐỐI không tự bịa thêm số liệu nào khác. "
-    "Trả lời bằng tiếng Việt, văn xuôi tự nhiên, ngắn gọn, dễ hiểu, "
-    "KHÔNG dùng Markdown, KHÔNG dùng gạch đầu dòng hay ký tự đặc biệt, "
-    "vì câu trả lời sẽ được hiển thị nguyên văn dạng plain text."
+    "nông dân tra cứu thông tin nông nghiệp. "
+    "Trả lời ngắn gọn, tự nhiên, thân thiện bằng tiếng Việt. "
+    "Nếu được cung cấp dữ liệu, hãy diễn giải tự nhiên. "
+    "Nếu không có dữ liệu phù hợp, hãy nói rõ và gợi ý câu hỏi khác. "
+    "KHÔNG dùng Markdown hay ký tự đặc biệt."
+)
+
+_CAPABILITIES_ANSWER = (
+    "Tôi có thể giúp bạn: "
+    "1. Xem tình hình sâu bệnh cây trồng theo quý. "
+    "2. Tra cứu năng suất và sản lượng dự kiến theo vụ mùa. "
+    "3. Theo dõi giá thị trường các loại nông sản như lúa, cà phê, rau màu. "
+    "4. Đặt câu hỏi về tình hình nông nghiệp Điện Biên. "
+    "Bạn cần thông tin gì?"
 )
 
 
