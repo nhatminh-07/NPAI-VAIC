@@ -59,6 +59,26 @@ class DiseaseDetection(Base):
     farm = relationship("Farm", back_populates="disease_detections")
 
 
+class DiseaseReport(Base):
+    """Báo cáo sâu bệnh do officer tạo qua tab Disease trên dashboard.
+    Tách riêng khỏi DiseaseDetection (vốn gắn với farm_id cụ thể) vì đây là
+    báo cáo nhanh, không bắt buộc phải liên kết với 1 farm có sẵn trong hệ thống.
+    """
+    __tablename__ = "disease_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    district = Column(String, nullable=False, default="Điện Biên")
+    crop_type = Column(String, nullable=False)  # rice | coffee | vegetable
+    disease_name = Column(String, nullable=False)
+    scientific_name = Column(String, nullable=True)
+    confidence = Column(Float, nullable=False)
+    severity = Column(String, nullable=False)  # healthy | mild | moderate | severe
+    affected_plant_count = Column(Integer, nullable=False)
+    recommendations = Column(Text, nullable=True)  # lưu dạng JSON string list
+    image_url = Column(String, nullable=False)
+    reported_at = Column(DateTime, default=datetime.utcnow)
+
+
 class YieldPrediction(Base):
     __tablename__ = "yield_predictions"
 

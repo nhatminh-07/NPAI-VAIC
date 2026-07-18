@@ -12,6 +12,20 @@ class DiseaseDetectionResponse(BaseModel):
     image_url: str
 
 
+class DiseaseReportItem(BaseModel):
+    id: int
+    district: str
+    cropType: str
+    diseaseName: str
+    severity: str
+    affectedPlantCount: int
+    reportedAt: str  # ISO date string
+
+
+class DiseaseReportListResponse(BaseModel):
+    reports: List[DiseaseReportItem]
+
+
 # ---------- Yield Forecast ----------
 class YieldPredictRequest(BaseModel):
     farm_id: Optional[int] = None
