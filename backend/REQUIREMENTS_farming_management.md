@@ -1,5 +1,78 @@
 # Yêu cầu backend/DB: Quản lý vùng canh tác & vụ canh tác
 
+> **✅ ĐÃ HỢP NHẤT TOÀN BỘ (cập nhật lần 2).** Dashboard giờ LẤY DỮ LIỆU HOÀN TOÀN từ hệ
+> thống Quản lý (vùng canh tác → vụ canh tác → báo cáo sâu bệnh gắn vùng), KHÔNG còn nửa
+> này nửa kia với bảng Farm/YieldPrediction cũ nữa. Mọi thứ liên kết với nhau và neo vào
+> kỳ báo cáo (demo: **Quý 3/2026** = quý hiện tại theo ngày hệ thống).
+>
+> **Cách hệ thống liên kết (nguồn dữ liệu dashboard):**
+> - **Tổng diện tích** = `SUM(tất cả FarmingRegion.area_ha)` (theo yêu cầu - tổng của mọi
+>   vùng, không lọc theo kỳ). Khi lọc theo cây trồng thì = tổng diện tích các vụ canh tác
+>   của cây đó trong kỳ.
+> - **Năng suất TB** = năng suất cơ sở theo loại cây (rice 5.5 / coffee 2.5 / vegetable
+>   12.0 t/ha), trọng số theo diện tích các `FarmingPeriod` trong kỳ.
+> - **Số ca sâu bệnh** = `COUNT(DiseaseDetection` trong kỳ`)`.
+> - **Tỷ lệ sâu bệnh** = `SUM(diện tích vùng có ≥1 báo cáo bệnh) / SUM(diện tích mọi vùng)`.
+> - **Biểu đồ/bảng theo huyện** = nhóm vùng canh tác theo `FarmingRegion.district` (tên
+>   huyện dùng đúng chuẩn `frontend/src/constants/districts.ts`, KHÔNG tiền tố "Huyện").
+> - Vì `created_at` = thời điểm tạo, dữ liệu cán bộ/nông dân nhập qua UI hiện lên dashboard
+>   Quý 3/2026 NGAY LẬP TỨC (đã test: tạo 1 vùng → tổng diện tích tăng đúng bằng diện tích
+>   vùng đó ngay lập tức).
+>
+> **Vấn đề "2 nguồn sự thật" nêu ở spec gốc coi như đã xử lý:** không còn nhóm theo
+> `Farm.location` (text tự do, tên huyện lệch chuẩn) ở bất kỳ đâu trên dashboard. Bảng
+> `Farm`/`YieldPrediction` vẫn còn (cho các endpoint khác) nhưng dashboard KHÔNG đọc.
+>
+> **File bổ sung ở lần này:**
+> - `app/routers/frontend_dashboard.py` - VIẾT LẠI hoàn toàn theo hướng region-centric.
+> - `seed_data.py` - thêm seed vùng canh tác + vụ canh tác + báo cáo sâu bệnh gắn vùng
+>   (Quý trước + Quý hiện tại, tên huyện chuẩn frontend). Đã bỏ block seed bệnh cũ (gắn
+>   Farm, tên huyện có tiền tố) để dữ liệu nhất quán 1 chuẩn.
+>
+> ---
+>
+> **✅ ĐÃ TRIỂN KHAI (cập nhật lần 1).** Tài liệu gốc bên dưới là spec ban
+> đầu; phần này ghi lại những gì THỰC SỰ được code, và các điểm đã đổi so với spec gốc
+> trong lúc triển khai (đọc code là nguồn sự thật cuối cùng, tài liệu này chỉ để tra cứu
+> nhanh).
+>
+> **Khác biệt so với spec gốc:**
+> - Spec gốc (mục 2.1, 4.1) đề xuất gắn `DiseaseDetection` với `FarmingPeriod` qua
+>   `farming_period_id` + field `farmingPeriodId`. Trong lúc frontend hoàn thiện trang
+>   `/scan`, đã đổi sang gắn trực tiếp với **`FarmingRegion`** qua **`farming_region_id`**
+>   + field **`regionId`** (đơn giản hơn: farmer báo cáo bệnh không cần đã khai vụ canh
+>   tác trước, chỉ cần biết đang ở vùng nào). Công thức "Tỷ lệ sâu bệnh" ở mục 3.2 đã
+>   được điều chỉnh tương ứng để tính theo `FarmingRegion.area_ha` thay vì
+>   `FarmingPeriod.area_ha`. Toàn bộ phần còn lại của spec giữ nguyên như đã triển khai.
+> - Đã xử lý luôn vấn đề DB cũ bị lệch schema nêu ở mục 5 (xoá `dienbien_agri.db` cũ, đã
+>   backup thành `dienbien_agri.db.bak-<timestamp>`, `create_all()` tạo lại từ đầu, chạy
+>   lại `seed_data.run()`).
+>
+> **File đã sửa/thêm:**
+> - `app/models.py` - thêm `FarmingRegion`, `FarmingPeriod`, cột
+>   `DiseaseDetection.farming_region_id`.
+> - `app/schemas.py` - thêm `FarmingRegionCreate/Item/ListResponse`,
+>   `FarmingPeriodCreate/Item/ListResponse`.
+> - `app/routers/frontend_farming.py` (MỚI) - 4 endpoint `/farming-regions`,
+>   `/farming-periods` (POST + GET mỗi cái), kèm validate diện tích vụ canh tác không
+>   vượt quá phần còn trống của vùng.
+> - `app/routers/frontend_disease.py` - thêm field `regionId` (Form, tuỳ chọn) vào
+>   `POST /disease/detect`, validate vùng tồn tại nếu có gửi, lưu vào
+>   `DiseaseDetection.farming_region_id`.
+> - `app/routers/frontend_dashboard.py` - `total_area_ha` giờ ưu tiên
+>   `SUM(FarmingPeriod.area_ha)` lọc đúng theo kỳ (sửa bug bỏ qua `start`/`end`), fallback
+>   `SUM(Farm.area)` khi chưa có `FarmingPeriod` nào. `disease_rate_percent` giờ tính theo
+>   diện tích vùng canh tác bị ảnh hưởng / tổng diện tích vùng, fallback về công thức đếm
+>   theo farm khi chưa có `DiseaseDetection` nào gắn `farming_region_id`.
+> - `app/main.py` - đăng ký `frontend_farming.router`.
+>
+> **Đã kiểm thử thủ công (curl) toàn bộ luồng:** tạo vùng → tạo vụ canh tác (kèm validate
+> vượt diện tích) → báo cáo bệnh kèm `regionId` (và không kèm, để test tương thích ngược)
+> → xác nhận `farming_region_id` lưu đúng trong DB → `GET /dashboard` trả về
+> `total_area_ha`/`disease_rate_percent` đúng công thức mới.
+
+---
+
 Tài liệu này mô tả đầy đủ những gì backend cần làm để hỗ trợ tính năng "Quản lý"
 (officer tạo vùng canh tác, farmer khai báo vụ canh tác) mà frontend đã build sẵn ở
 `frontend/src/app/(officer)/management/page.tsx` và
@@ -8,9 +81,6 @@ Tài liệu này mô tả đầy đủ những gì backend cần làm để hỗ
 phần **quan trọng nhất**: cách tính năng mới ăn khớp với các phép tính hiện có ở
 dashboard (đặc biệt là "Tổng diện tích" và "Tỷ lệ sâu bệnh"), để không tạo ra 2 nguồn
 sự thật (source of truth) cho "diện tích đang canh tác" song song nhau.
-
-**Không đổi gì ở frontend hay backend trong tài liệu này** - đây thuần là spec để backend
-engineer triển khai. Không migrate/xoá dữ liệu hiện có.
 
 ---
 

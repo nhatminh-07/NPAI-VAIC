@@ -3,7 +3,7 @@
 // import và dùng qua object `copy` này, để dễ rà soát/sửa nội dung ở một chỗ duy nhất.
 
 export const copy = {
-  appName: 'AgriPlatform',
+  appName: 'Gạo Bản',
 
   common: {
     loading: 'Đang tải...',
@@ -17,7 +17,7 @@ export const copy = {
   },
 
   rolePicker: {
-    title: 'AgriPlatform',
+    title: 'Gạo Bản - Đồng hành để vươn xa',
     subtitle: 'Chọn vai trò của bạn để bắt đầu',
     farmer: 'Tôi là nông dân',
     farmerDesc: 'Chẩn đoán bệnh cây, dự báo năng suất, xem giá thị trường',
@@ -164,8 +164,13 @@ export const copy = {
       district: 'Huyện',
       area: 'Diện tích (ha)',
       createdAt: 'Ngày tạo',
+      actions: 'Thao tác',
     },
     loadErrorTitle: 'Không thể tải danh sách vùng canh tác',
+    deleteButton: 'Xóa',
+    deleting: 'Đang xóa...',
+    deleteConfirm: 'Xóa vùng canh tác này? Các vụ canh tác thuộc vùng cũng sẽ bị xóa.',
+    deleteErrorTitle: 'Không thể xóa vùng canh tác',
   },
 
   // Trang /management của NÔNG DÂN: khai báo vụ canh tác trong 1 vùng do cán bộ tạo.
@@ -190,6 +195,10 @@ export const copy = {
       createdAt: 'Ngày thêm',
     },
     loadErrorTitle: 'Không thể tải danh sách vụ canh tác',
+    deleteButton: 'Xóa',
+    deleting: 'Đang xóa...',
+    deleteConfirm: 'Xóa vụ canh tác này?',
+    deleteErrorTitle: 'Không thể xóa vụ canh tác',
   },
 
   chat: {

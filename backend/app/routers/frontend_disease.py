@@ -5,13 +5,14 @@ Response: DiseaseDetectionResult
 """
 import os
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.config import UPLOAD_DIR
 from app.database import get_db
-from app.models import DiseaseDetection
+from app.models import DiseaseDetection, FarmingRegion
 from app.schemas import DiseaseReportItem, DiseaseReportListResponse
 from app.services.disease_model import get_model
 from app.services.disease_rules import get_disease_display
@@ -32,6 +33,7 @@ async def detect_disease_frontend(
     cropType: str = Form("rice", description="rice | coffee | vegetable"),
     affectedPlantCount: str = Form(..., description="Số lượng cây bị ảnh hưởng, vd '5'"),
     district: str = Form("Điện Biên", description="Huyện/khu vực báo cáo (tùy chọn)"),
+    regionId: Optional[str] = Form(None, description="ID vùng canh tác (tùy chọn), xem FarmingRegion"),
     db: Session = Depends(get_db),
 ):
     """Frontend API: Nhận diện sâu bệnh + lưu báo cáo vào bảng disease_detections (hợp nhất)."""
@@ -48,6 +50,17 @@ async def detect_disease_frontend(
         raise HTTPException(400, "affectedPlantCount phải là số nguyên dạng chuỗi, vd '5'")
     if plant_count <= 0:
         raise HTTPException(400, "affectedPlantCount phải lớn hơn 0")
+
+    # regionId tuỳ chọn - nếu farmer chưa chọn vùng canh tác (chưa có vùng nào, hoặc bỏ
+    # qua) thì để None, KHÔNG chặn luồng chẩn đoán chính vì đây không phải field bắt buộc.
+    region_id: Optional[int] = None
+    if regionId:
+        try:
+            region_id = int(regionId)
+        except ValueError:
+            raise HTTPException(400, "regionId phải là số nguyên dạng chuỗi, vd '3'")
+        if not db.query(FarmingRegion).filter(FarmingRegion.id == region_id).first():
+            raise HTTPException(404, "Không tìm thấy vùng canh tác")
 
     # Save image
     filename = f"{uuid.uuid4().hex}{ext}"
@@ -74,6 +87,7 @@ async def detect_disease_frontend(
         severity=severity,
         affected_plant_count=plant_count,
         recommendation="; ".join(recommendations),
+        farming_region_id=region_id,
     )
     db.add(record)
     db.commit()

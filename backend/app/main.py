@@ -8,6 +8,7 @@ from app import models  # noqa: F401 - đảm bảo models được đăng ký t
 from app.routers import disease, yield_forecast, market_price
 from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard
 from app.routers import assistant
+from app.routers import frontend_farming
 
 # Import seed_data module để có thể gọi
 import seed_data
@@ -48,6 +49,9 @@ app.include_router(frontend_dashboard.router)
 
 # AI Assistant (chatbot)
 app.include_router(assistant.router)
+
+# Quản lý vùng canh tác & vụ canh tác
+app.include_router(frontend_farming.router)
 
 
 @app.get("/")

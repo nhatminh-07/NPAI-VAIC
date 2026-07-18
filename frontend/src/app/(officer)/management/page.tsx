@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { copy } from '@/constants/copy';
 import { districts } from '@/constants/districts';
-import { ApiError, createFarmingRegion, getFarmingRegions } from '@/lib/api';
+import { ApiError, createFarmingRegion, deleteFarmingRegion, getFarmingRegions } from '@/lib/api';
 import type { FarmingRegion } from '@/types/api';
 
 type ListStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -37,6 +37,7 @@ export default function RegionManagementPage() {
   const [regions, setRegions] = useState<FarmingRegion[]>([]);
   const [listOffline, setListOffline] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const nameError = name.trim() === '' ? copy.regionManagement.nameError : undefined;
   const areaError = areaHa !== '' && Number(areaHa) > 0 ? undefined : copy.forecast.areaError;
@@ -61,6 +62,19 @@ export default function RegionManagementPage() {
       cancelled = true;
     };
   }, [retryToken]);
+
+  async function handleDelete(region: FarmingRegion) {
+    if (!window.confirm(copy.regionManagement.deleteConfirm)) return;
+    setDeletingId(region.id);
+    try {
+      await deleteFarmingRegion(region.id);
+      setRetryToken((t) => t + 1); // tải lại danh sách sau khi xóa
+    } catch {
+      window.alert(copy.regionManagement.deleteErrorTitle);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -188,6 +202,7 @@ export default function RegionManagementPage() {
                     <th className="px-3 py-2 text-sm font-semibold text-ink-secondary">{copy.regionManagement.columns.district}</th>
                     <th className="px-3 py-2 text-sm font-semibold text-ink-secondary">{copy.regionManagement.columns.area}</th>
                     <th className="px-3 py-2 text-sm font-semibold text-ink-secondary">{copy.regionManagement.columns.createdAt}</th>
+                    <th className="px-3 py-2 text-right text-sm font-semibold text-ink-secondary">{copy.regionManagement.columns.actions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,6 +212,16 @@ export default function RegionManagementPage() {
                       <td className="px-3 py-2 text-base text-ink-primary">{r.district}</td>
                       <td className="px-3 py-2 text-base tabular-nums text-ink-primary">{r.areaHa}</td>
                       <td className="px-3 py-2 text-base text-ink-secondary">{formatDateVi(r.createdAt)}</td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(r)}
+                          disabled={deletingId === r.id}
+                          className="min-h-[36px] rounded-lg px-3 py-1.5 text-sm font-semibold text-status-critical transition-colors hover:bg-status-critical/10 disabled:cursor-not-allowed disabled:text-ink-muted"
+                        >
+                          {deletingId === r.id ? copy.regionManagement.deleting : copy.regionManagement.deleteButton}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

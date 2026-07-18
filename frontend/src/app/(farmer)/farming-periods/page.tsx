@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { copy } from '@/constants/copy';
-import { ApiError, createFarmingPeriod, getFarmingPeriods, getFarmingRegions } from '@/lib/api';
+import { ApiError, createFarmingPeriod, deleteFarmingPeriod, getFarmingPeriods, getFarmingRegions } from '@/lib/api';
 import type { CropType, FarmingPeriod, FarmingRegion } from '@/types/api';
 
 type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -47,6 +47,7 @@ export default function PeriodManagementPage() {
   const [periods, setPeriods] = useState<FarmingPeriod[]>([]);
   const [listOffline, setListOffline] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const areaError = areaHa !== '' && Number(areaHa) > 0 ? undefined : copy.forecast.areaError;
   const cropCountError = cropCount !== '' && Number(cropCount) > 0 ? undefined : copy.periodManagement.cropCountError;
@@ -111,6 +112,19 @@ export default function PeriodManagementPage() {
     } catch (err) {
       setSubmitOffline(err instanceof ApiError && err.offline);
       setSubmitStatus('error');
+    }
+  }
+
+  async function handleDelete(period: FarmingPeriod) {
+    if (!window.confirm(copy.periodManagement.deleteConfirm)) return;
+    setDeletingId(period.id);
+    try {
+      await deleteFarmingPeriod(period.id);
+      setRetryToken((t) => t + 1); // tải lại danh sách sau khi xóa
+    } catch {
+      window.alert(copy.periodManagement.deleteErrorTitle);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -242,9 +256,19 @@ export default function PeriodManagementPage() {
           <div className="space-y-3">
             {periods.map((p) => (
               <Card key={p.id} tint>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-ink-primary">{p.regionName}</span>
-                  <span className="text-sm text-ink-secondary">{formatDateVi(p.createdAt)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-ink-secondary">{formatDateVi(p.createdAt)}</span>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(p)}
+                      disabled={deletingId === p.id}
+                      className="min-h-[36px] shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold text-status-critical transition-colors hover:bg-status-critical/10 disabled:cursor-not-allowed disabled:text-ink-muted"
+                    >
+                      {deletingId === p.id ? copy.periodManagement.deleting : copy.periodManagement.deleteButton}
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-secondary">
                   <span>

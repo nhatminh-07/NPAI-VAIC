@@ -296,6 +296,12 @@ export async function createFarmingRegion(input: { name: string; district: strin
   });
 }
 
+// Xoá 1 vùng canh tác. Backend đồng thời xoá các vụ canh tác thuộc vùng và gỡ liên kết
+// vùng khỏi báo cáo sâu bệnh (giữ lại bản ghi báo cáo). Trả về { ok: true }.
+export async function deleteFarmingRegion(regionId: number): Promise<void> {
+  await request<{ ok: boolean }>(`/farming-regions/${regionId}`, { method: 'DELETE' });
+}
+
 export async function getFarmingPeriods(): Promise<FarmingPeriodListResult> {
   const raw = await request<{ periods?: FarmingPeriod[] }>('/farming-periods');
   return { periods: raw.periods ?? [] };
@@ -312,4 +318,9 @@ export async function createFarmingPeriod(input: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+}
+
+// Xoá 1 vụ canh tác (planting operation). Trả về { ok: true }.
+export async function deleteFarmingPeriod(periodId: number): Promise<void> {
+  await request<{ ok: boolean }>(`/farming-periods/${periodId}`, { method: 'DELETE' });
 }
