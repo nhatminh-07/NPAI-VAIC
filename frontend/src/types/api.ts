@@ -34,6 +34,31 @@ export interface YieldInput {
   district: string;
 }
 
+export interface WeatherComparison {
+  current: {
+    temperature: number;
+    humidity: number;
+    rainfall: number;
+    description: string;
+  };
+  optimal: {
+    temperature: string;
+    humidity: string;
+    rainfall: string;
+  };
+  deviation: {
+    temperature: string;
+    status: string;
+  };
+}
+
+export interface CropInfo {
+  name_vi: string;
+  growth_days: number;
+  days_since_planting: number;
+  notes: string;
+}
+
 export interface YieldForecastResult {
   predictedYieldTPerHa: number;
   totalOutputTons: number;
@@ -43,6 +68,14 @@ export interface YieldForecastResult {
   risk: RiskLevel;
   riskNote: string;
   rationale: string[];
+
+  // Extended fields
+  currentWeather: CurrentWeather;
+  weatherComparison: WeatherComparison;
+  harvestAdvice: 'optimal' | 'normal' | 'prepare_harvest' | 'harvest_early' | 'monitor';
+  harvestAdviceNote: string;
+  remainingDays: number;
+  cropInfo: CropInfo;
 }
 
 // ---------- 3. Market price ----------
