@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Be_Vietnam_Pro } from 'next/font/google';
 import { copy } from '@/constants/copy';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 import './globals.css';
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -27,7 +28,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi" className={beVietnamPro.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ChatWidget />
+      </body>
     </html>
   );
 }

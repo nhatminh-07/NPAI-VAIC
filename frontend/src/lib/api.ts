@@ -1,4 +1,6 @@
 import type {
+  ChatMessage,
+  ChatResponse,
   CropType,
   DashboardResult,
   DiseaseDetectionResult,
@@ -163,4 +165,45 @@ export async function getWeatherForecast(lat?: number, lon?: number): Promise<We
   const query = params.toString();
   const res = await request<{ success: boolean; data: WeatherForecastResult }>(`/weather/forecast${query ? '?' + query : ''}`);
   return res.data;
+}
+
+/**
+ * GHI CHÚ CHO BACKEND ENGINEER (trợ lý AI / chatbot):
+ * ----------------------------------------------------
+ * Frontend gọi endpoint này mỗi khi người dùng gửi 1 tin nhắn trong khung chat
+ * (component ChatWidget). Backend cần implement:
+ *
+ *   POST /assistant/chat
+ *
+ * Request body (JSON):
+ *   {
+ *     "message": string,          // câu hỏi mới nhất của người dùng, vd:
+ *                                  // "Tóm tắt những sự kiện trong quý 3 năm 2025"
+ *     "history": [                // (tuỳ chọn) các lượt hỏi/đáp trước đó trong CÙNG
+ *       { "role": "user" | "assistant", "content": string },   // phiên chat, để backend
+ *       ...                                                     // hiểu ngữ cảnh hội thoại
+ *     ]
+ *   }
+ *
+ * Response body (JSON), status 200:
+ *   {
+ *     "reply": string   // câu trả lời bằng tiếng Việt, dạng văn bản thuần (frontend hiển
+ *                        // thị nguyên văn, không parse Markdown/HTML)
+ *   }
+ *
+ * Lỗi: trả về HTTP status khác 2xx kèm body bất kỳ là đủ - frontend chỉ hiển thị
+ * thông báo lỗi chung, không đọc chi tiết message lỗi từ backend.
+ *
+ * Gợi ý xử lý cho câu như "Tóm tắt những sự kiện trong quý X năm Y":
+ * backend cần tự phân tích message để lấy quý/năm, sau đó truy vấn các bảng liên quan
+ * (disease_detections, yield_predictions, market_prices...) trong khoảng thời gian đó rồi
+ * tổng hợp/diễn giải thành đoạn văn (có thể dùng LLM hoặc rule-based). Frontend không gửi
+ * kèm bất kỳ dữ liệu tổng hợp nào - toàn bộ việc truy vấn + suy luận là trách nhiệm backend.
+ */
+export async function sendChatMessage(message: string, history: ChatMessage[] = []): Promise<ChatResponse> {
+  return request<ChatResponse>('/assistant/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history }),
+  });
 }

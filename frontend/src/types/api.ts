@@ -170,3 +170,15 @@ export interface WeatherForecastResult {
   location: string;
   forecast: DailyForecast[];
 }
+
+// ---------- 7. AI Assistant (chatbot) ----------
+// Xem chú thích chi tiết cho backend engineer tại hàm sendChatMessage() trong src/lib/api.ts
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatResponse {
+  reply: string; // câu trả lời của trợ lý AI, dạng văn bản tiếng Việt, sẵn sàng hiển thị trực tiếp
+}

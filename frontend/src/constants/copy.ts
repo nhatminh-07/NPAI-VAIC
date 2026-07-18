@@ -143,4 +143,22 @@ export const copy = {
     },
     errorTitle: 'Không thể tải báo cáo sâu bệnh',
   },
+
+  chat: {
+    title: 'Trợ lý AI',
+    subtitle: 'Hỏi đáp nhanh về dữ liệu nông nghiệp',
+    open: 'Mở trợ lý AI',
+    close: 'Đóng trợ lý AI',
+    inputPlaceholder: 'Nhập câu hỏi của bạn...',
+    send: 'Gửi',
+    thinking: 'Đang trả lời...',
+    emptyHint: 'Xin chào! Tôi có thể giúp gì cho bạn? Thử một gợi ý bên dưới hoặc tự đặt câu hỏi.',
+    errorMessage: 'Không thể nhận phản hồi từ trợ lý. Vui lòng thử lại.',
+    hints: [
+      'Tóm tắt những sự kiện trong quý 3 năm 2025',
+      'Tình hình sâu bệnh gần đây thế nào?',
+      'Dự báo giá lúa tuần tới ra sao?',
+      'Huyện nào có năng suất cao nhất?',
+    ],
+  },
 } as const;
