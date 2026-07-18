@@ -44,11 +44,10 @@ export function Select({ id, value, onChange, options, className = '', ...rest }
     setOpen(true);
   }
 
-  // Panel được render qua portal (position: fixed, gắn vào document.body) thay vì
-  // absolute bên trong container, để không bị các ancestor có overflow-y-auto/hidden
-  // (vd. <main> trong OfficerShell) cắt (clip) mất phần tràn ra ngoài khung nhìn của chúng.
-  useLayoutEffect(() => {
-    if (!open) return;
+  // Tính lại vị trí panel bám theo trigger hiện tại + tránh tràn viewport. Dùng cả khi
+  // vừa mở (useLayoutEffect bên dưới) VÀ khi cuộn/resize trong lúc đang mở (xem effect
+  // sau) - để panel LUÔN bám đúng theo trigger thay vì phải đóng lại mỗi khi cuộn.
+  function updatePosition() {
     const trigger = containerRef.current;
     const panel = panelRef.current;
     if (!trigger || !panel) return;
@@ -74,9 +73,21 @@ export function Select({ id, value, onChange, options, className = '', ...rest }
         ? prev
         : { top, left, width: triggerRect.width },
     );
+  }
+
+  // Panel được render qua portal (position: fixed, gắn vào document.body) thay vì
+  // absolute bên trong container, để không bị các ancestor có overflow-y-auto/hidden
+  // (vd. <main> trong OfficerShell) cắt (clip) mất phần tràn ra ngoài khung nhìn của chúng.
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePosition();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Đóng dropdown khi: bấm ra ngoài, nhấn Escape, hoặc cuộn/resize trang.
+  // Đóng dropdown khi bấm ra ngoài hoặc nhấn Escape. Khi CUỘN/resize thì KHÔNG đóng -
+  // chỉ tính lại vị trí để panel tiếp tục bám đúng theo trigger (trước đây đóng luôn
+  // khi cuộn, khiến dropdown "biến mất" ngay khi người dùng cuộn trang quản lý - trang
+  // /management và /farming-periods có form + danh sách dài nên rất hay gặp).
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(e: MouseEvent) {
@@ -91,10 +102,10 @@ export function Select({ id, value, onChange, options, className = '', ...rest }
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false);
     }
-    // Đóng dropdown khi bất kỳ ancestor nào cuộn (kể cả <main> có overflow riêng) -
-    // dùng capture:true vì sự kiện scroll của phần tử con không bubble lên.
+    // dùng capture:true vì sự kiện scroll của phần tử con (vd <main> tự cuộn riêng)
+    // không bubble lên document theo cách thông thường.
     function handleScroll() {
-      setOpen(false);
+      updatePosition();
     }
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -11,8 +11,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfidenceBar } from '@/components/ui/ConfidenceBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { copy } from '@/constants/copy';
-import { ApiError, detectDisease } from '@/lib/api';
-import type { CropType, DiseaseDetectionResult, Severity } from '@/types/api';
+import { ApiError, detectDisease, getFarmingRegions } from '@/lib/api';
+import type { CropType, DiseaseDetectionResult, FarmingRegion, Severity } from '@/types/api';
 
 // idle = chưa phân tích, loading = đang gọi API, success = có kết quả, error = gọi lỗi.
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -45,8 +45,18 @@ export default function ScanPage() {
   const [offline, setOffline] = useState(false);
   const [cropType, setCropType] = useState<CropType>('rice');
   const [affectedPlantCount, setAffectedPlantCount] = useState('');
+  // Vùng canh tác (tuỳ chọn) - do cán bộ tạo ở trang /management. Không bắt buộc vì
+  // farmer có thể chưa có vùng nào được tạo sẵn.
+  const [regions, setRegions] = useState<FarmingRegion[]>([]);
+  const [regionId, setRegionId] = useState('');
   const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getFarmingRegions()
+      .then((res) => setRegions(res.regions))
+      .catch(() => {}); // tuỳ chọn - im lặng bỏ qua nếu lỗi, không chặn luồng chẩn đoán chính
+  }, []);
 
   // Hợp lệ khi đã nhập và > 0. Lưu ý: chỉ HIỂN THỊ lỗi này khi `touched` = true (sau
   // khi người dùng đã bấm "Phân tích" ít nhất 1 lần), để không báo lỗi ngay khi vừa
@@ -82,7 +92,7 @@ export default function ScanPage() {
     if (affectedPlantCountError) return;
     setStatus('loading');
     try {
-      const res = await detectDisease(file, cropType, Number(affectedPlantCount));
+      const res = await detectDisease(file, cropType, Number(affectedPlantCount), regionId ? Number(regionId) : undefined);
       setResult(res);
       setStatus('success');
     } catch (err) {
@@ -102,6 +112,7 @@ export default function ScanPage() {
     setChecked({});
     setCropType('rice');
     setAffectedPlantCount('');
+    setRegionId('');
     setTouched(false);
     if (inputRef.current) inputRef.current.value = '';
   }
@@ -159,6 +170,22 @@ export default function ScanPage() {
 
           {status !== 'success' && (
             <>
+              <div>
+                <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="scan-region">
+                  {copy.periodManagement.regionLabel} ({copy.scan.regionOptionalHint})
+                </label>
+                <Select
+                  id="scan-region"
+                  className="min-h-[44px]"
+                  value={regionId}
+                  onChange={setRegionId}
+                  options={[
+                    { value: '', label: copy.periodManagement.regionPlaceholder },
+                    ...regions.map((r) => ({ value: String(r.id), label: `${r.name} (${r.district})` })),
+                  ]}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="crop-type">

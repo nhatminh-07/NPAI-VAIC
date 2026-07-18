@@ -42,6 +42,7 @@ export const copy = {
     affectedPlantCountLabel: 'Số cây bị bệnh',
     affectedPlantCountPlaceholder: 'Ví dụ: 5',
     affectedPlantCountError: 'Vui lòng nhập số cây lớn hơn 0',
+    regionOptionalHint: 'không bắt buộc',
     changePhoto: 'Chọn ảnh khác',
     analyzeButton: 'Phân tích',
     analyzing: 'Đang phân tích ảnh...',

@@ -56,11 +56,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 // Gửi ảnh + thông tin kèm theo để backend chẩn đoán bệnh cây (trang /scan).
 // Dùng multipart/form-data vì có kèm file ảnh.
-export async function detectDisease(file: File, cropType: CropType, affectedPlantCount: number): Promise<DiseaseDetectionResult> {
+// `regionId` tuỳ chọn: vùng canh tác (do cán bộ tạo, xem farming_regions) mà cây bị
+// bệnh này thuộc về - GHI CHÚ CHO BACKEND: đây là field MỚI, hiện `/disease/detect`
+// chưa nhận field này, cần thêm 1 Form field tuỳ chọn `regionId: Optional[int]` và lưu
+// vào `DiseaseDetection.farming_region_id` (nullable, để tương thích ngược với báo cáo
+// không chọn vùng). Không bắt buộc điền vì farmer có thể chưa có vùng canh tác nào.
+export async function detectDisease(
+  file: File,
+  cropType: CropType,
+  affectedPlantCount: number,
+  regionId?: number,
+): Promise<DiseaseDetectionResult> {
   const formData = new FormData();
   formData.append('image', file);
   formData.append('cropType', cropType);
   formData.append('affectedPlantCount', String(affectedPlantCount));
+  if (regionId !== undefined) formData.append('regionId', String(regionId));
   return request<DiseaseDetectionResult>('/disease/detect', {
     method: 'POST',
     body: formData,
