@@ -2,7 +2,6 @@
 
 > *"Đồng hành để vươn xa"*
 
-> ⚠️ **Đây là bản DEMO/MVP**, được xây dựng để trình diễn ý tưởng sản phẩm cho hackathon. Dữ liệu (giá nông sản, lịch sử năng suất, tình hình dịch bệnh, vùng canh tác...) là dữ liệu mẫu/mô phỏng, mô hình AI là mô hình rút gọn dùng cho minh họa. **Không dùng kết quả của hệ thống này để ra quyết định canh tác hay giao dịch thực tế.**
 
 **Gạo Bản** là hệ thống AI hỗ trợ nông nghiệp thông minh cho tỉnh Điện Biên, gồm 2 luồng trải nghiệm riêng biệt theo vai trò: **Nông dân** (chẩn đoán bệnh, dự báo năng suất, xem giá, khai báo vụ canh tác) và **Cán bộ nông nghiệp** (dashboard tổng hợp toàn tỉnh, quản lý vùng canh tác, theo dõi báo cáo sâu bệnh). Một **trợ lý AI** (chatbot) đồng hành trên mọi màn hình.
 
@@ -271,13 +270,3 @@ CORS_ORIGINS=http://localhost:3000,https://agriplatform-neon.vercel.app
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-## Giới hạn của bản demo
-
-- Đây là **MVP phục vụ mục đích trình diễn hackathon**, chưa phải sản phẩm hoàn chỉnh cho môi trường production.
-- **Không có đăng nhập/phân quyền thật** — chỉ có màn chọn vai trò để điều hướng; các API tạo/xóa dữ liệu không yêu cầu xác thực.
-- Mô hình nhận diện bệnh cây dùng mô hình rút gọn; các thư viện deep learning đầy đủ (`transformers`, `torch`, `torchvision`) đang được **để tắt** trong `requirements.txt` để tránh lỗi khi chạy demo trên Windows.
-- Dữ liệu giá thị trường, năng suất, vùng/vụ canh tác, số liệu dashboard là **dữ liệu mẫu** (seed data), chưa kết nối nguồn dữ liệu thật của tỉnh.
-- DB demo dùng **SQLite**; khi đổi model cần seed lại (`python seed_data.py`) vì `create_all()` không tự thêm cột vào bảng đã tồn tại.
-- Ảnh chẩn đoán bệnh hiện lưu cục bộ trên máy chủ (`uploaded_images/`); môi trường production nên chuyển sang dịch vụ lưu trữ đối tượng (Supabase Storage/CDN...).
-- **Đề xuất cây trồng** và **thời tiết** đã có mã service backend nhưng **router chưa được đăng ký** (chưa có API & giao diện).
-- Bản đồ nhiệt (heatmap) vùng bệnh trên ảnh chẩn đoán dự kiến bổ sung ở phiên bản tiếp theo.
