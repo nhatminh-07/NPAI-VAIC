@@ -1,45 +1,47 @@
-﻿Ngay,Nhom_hang,Mat_hang,Gia_thap,Gia_cao,Don_vi,Khu_vuc,Nguon,Ghi_chu
-2026-01-24,Gao,Tam IR 504,7850,8000,dong/kg,DBSCL,sct.dongnai.gov.vn,Gia tam IR 504 ngay 24/1/2026
-2026-01-24,Gao,"Phu pham (cam, tam vun...)",7750,11000,dong/kg,DBSCL,sct.dongnai.gov.vn,Cac mat hang phu pham
-2026-03-09,Gao,Gia gao xuat khau binh quan (2 thang dau nam),464.1,464.1,USD/tan,Xuat khau,gaophuongnam.vn,"Thap hon 15,4% so voi cung ky 2025"
-2026-04-02,Gao,Gao nguyen lieu xuat khau CL 555,8000,8050,dong/kg,DBSCL,thoibaotaichinhvietnam.vn,Tang 50 dong/kg so voi hom truoc
-2026-04-02,Gao,Gao nguyen lieu xuat khau OM 5451,8350,8450,dong/kg,DBSCL,thoibaotaichinhvietnam.vn,
-2026-05-11,Gao,Gao xuat khau Viet Nam (bien dong),,,USD/tan,Xuat khau,vietnambiz.vn,Gao xuat khau tang 10-21 USD/tan so voi truoc do (khong neu gia tuyet doi)
-2026-07-01,Lua,IR 50404 (lua tuoi),5400,5600,dong/kg,DBSCL,baomoi.com (Bao Van hoa),
-2026-07-01,Lua,OM 34 (lua tuoi),5400,5600,dong/kg,DBSCL,baomoi.com (Bao Van hoa),
-2026-07-01,Lua,OM 5451 (lua tuoi),5700,5800,dong/kg,DBSCL,baomoi.com (Bao Van hoa),
-2026-07-01,Lua,Dai Thom 8 (lua tuoi),6100,6300,dong/kg,DBSCL,baomoi.com (Bao Van hoa),
-2026-07-01,Lua,OM 18 (lua tuoi),6200,6300,dong/kg,DBSCL,baomoi.com (Bao Van hoa),
-2026-07-01,Gao,Gao nguyen lieu CL 555,9200,9300,dong/kg,DBSCL,baomoi.com (Bao Van hoa),Tang 100 dong/kg
-2026-07-05,Lua,IR 50404 (lua tuoi),,,dong/kg,DBSCL,vietbao.vn,Tang 100 dong/kg so voi ngay truoc (gia tuyet doi khong neu ro)
-2026-07-05,Lua,Dai Thom 8 (lua tuoi),,,dong/kg,DBSCL,vietbao.vn,Tang 200 dong/kg so voi ngay truoc (gia tuyet doi khong neu ro)
-2026-07-06,Gao,Gao nguyen lieu xuat khau IR 504,8800,8900,dong/kg,DBSCL,thoibaotaichinhvietnam.vn,
-2026-07-06,Gao,Gao nguyen lieu xuat khau CL 555,9300,9400,dong/kg,DBSCL,thoibaotaichinhvietnam.vn,
-2026-07-14,Lua,Lua gao noi dia (chung),,,dong/kg,DBSCL,vietbao.vn,"It bien dong, giao dich yeu (khong co gia tuyet doi)"
-2026-07-16,Lua,Lua tuoi cac loai,,,dong/kg,DBSCL,vietbao.vn,"Binh on, giao dich cham"
-2026-07-18,Lua,Lua tuoi cac loai,,,dong/kg,DBSCL,doanhnghiephoinhap.vn,Tang 100-500 dong/kg so voi hom truoc
-2026-07-18,Gao,Gao xuat khau Viet Nam (5% tam),445,450,USD/tan,Xuat khau,doanhnghiephoinhap.vn,
-2026-02-15,Rau mau,Ca chua,15000,20000,dong/kg,TP.HCM,xaluannews.com,"Sau Tet, giam 2-3 lan so voi truoc Tet"
-2026-02-15,Rau mau,Ca tim / cu cai trang / rau ma / rau muong / muop huong,10000,20000,dong/kg,TP.HCM,xaluannews.com,
-2026-02-15,Rau mau,Cai xanh / cai ngot,25000,30000,dong/kg,TP.HCM,xaluannews.com,Tang nhe ~5.000 d/kg do nguon hang it
-2026-04-08,Rau mau,Bap cai (cho dau moi Thu Duc),6000,6000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,"Bau, bi (cho dau moi)",5000,5000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Ca chua (cho dau moi),13000,13000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Ca rot Da Lat (cho dau moi),15000,15000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Dua leo (cho dau moi),9000,9000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Cai xanh (cho dau moi),13000,13000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Cai ngot (cho dau moi),8000,8000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Khoai tay (cho le/sieu thi),40000,40000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,Ban le cao hon 10-30% so voi cho dau moi
-2026-04-08,Rau mau,Dua leo (cho le/sieu thi),22000,22000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-04-08,Rau mau,Cai ngot / cai xanh / rau muong (cho le),22000,22000,dong/kg,TP.HCM,cafef.vn / nld.com.vn,
-2026-06-02,Rau mau,Rau xanh (chung),,,dong/kg,TP.HCM / DBSCL,dotip.dongthap.gov.vn,Tang gia manh (khong co so lieu cu the tung loai)
-2026-06-29,Rau mau,Cai xanh / cai ngot,14000,14000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,Tang 3.000 dong/kg
-2026-06-29,Rau mau,Rau mung toi,12000,12000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,Tang 2.000 dong/kg
-2026-06-29,Rau mau,Bap cai trang,12000,12000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,Tang 2.000 dong/kg
-2026-06-29,Rau mau,Ca chua Da Lat,20000,20000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,
-2026-06-29,Rau mau,Ca rot Da Lat,20000,20000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,
-2026-06-29,Rau mau,Cai bo xoi,30000,30000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,
-2026-06-29,Rau mau,Cai thao,20000,20000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,
-2026-06-29,Rau mau,Bau,15000,15000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,Tang 1.000 dong/kg
-2026-06-29,Rau mau,Dua leo,16000,16000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,Tang 4.000 dong/kg
-2026-06-29,Rau mau,Kho qua,16000,16000,dong/kg,TP.HCM,dotip.dongthap.gov.vn,Tang 1.000 dong/kg
+date,coffee_price_vnd_kg,bac_thom_7_price_vnd_kg,tomato_price_vnd_kg
+6/1/2026,84000,20000,23600
+6/2/2026,85000,20700,23400
+6/3/2026,86000,20100,23000
+6/4/2026,86200,20300,23600
+6/5/2026,86400,21000,24000
+6/6/2026,86100,21300,24400
+6/7/2026,85700,22800,24900
+6/8/2026,85000,22100,26300
+6/9/2026,84900,21300,25500
+6/10/2026,85200,20800,25300
+6/11/2026,84800,21600,25800
+6/12/2026,85300,22700,25600
+6/13/2026,87600,23900,25400
+6/14/2026,87900,24000,24900
+6/15/2026,91200,23300,24600
+6/16/2026,88800,22700,24500
+6/17/2026,87400,21900,24800
+6/18/2026,85000,21300,25000
+6/19/2026,85700,20500,24300
+6/20/2026,86100,19800,24000
+6/21/2026,88200,19700,23600
+6/22/2026,90030,19400,23500
+6/23/2026,90250,19700,23000
+6/24/2026,91000,20000,22500
+6/25/2026,90990,20700,22100
+6/26/2026,89300,21100,22400
+6/27/2026,88400,21700,23600
+6/28/2026,89200,21800,24300
+6/29/2026,89900,21500,25000
+6/30/2026,89700,21000,26300
+7/1/2026,90100,20600,26000
+7/2/2026,90400,20100,25900
+7/3/2026,92000,20300,26100
+7/4/2026,93000,20500,26400
+7/5/2026,94700,20700,26500
+7/6/2026,93900,20700,25800
+7/7/2026,93300,21000,26000
+7/8/2026,93100,21100,26300
+7/9/2026,94200,21300,26500
+7/10/2026,94400,21100,26900
+7/11/2026,94700,20800,26500
+7/12/2026,94950,20700,25500
+7/13/2026,95000,21100,25100
+7/14/2026,94900,21200,24900
+7/15/2026,94800,21300,24100
+7/16/2026,94600,21400,23600

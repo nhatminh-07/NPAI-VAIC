@@ -117,6 +117,7 @@ export interface MarketPriceResult {
   forecast: PriceForecastPoint[]; // giá dự báo (đường đứt nét + dải tin cậy)
   currentPrice: number;
   change7dPercent: number;
+  changeDays: number;
   trendLabel: string; // tiếng Việt, trung lập (không phải khuyến nghị mua/bán)
 }
 
