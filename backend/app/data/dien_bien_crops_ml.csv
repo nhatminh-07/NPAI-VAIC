@@ -1,0 +1,10 @@
+crop,season,sow_month_start,sow_month_end,harvest_month_start,harvest_month_end,growth_days_min,growth_days_max,altitude_m_min,altitude_m_max,temp_c_min,temp_c_max,humidity_pct_min,humidity_pct_max,rainfall_mm_min,rainfall_mm_max,soil_ph_min,soil_ph_max,yield_ton_ha_min,yield_ton_ha_max,area_ha
+Bắc Thơm số 7,xuan,1,2,5,6,125,140,,,20,30,70,90,1200,1800,5.5,7.5,5.0,6.5,
+Bắc Thơm số 7,mua,6,6,9,10,100,120,,,20,30,70,90,1200,1800,5.5,7.5,5.0,6.5,
+Séng Cù,chiem_xuan,12,1,5,6,125,135,500,1400,16,33,70,90,1200,1800,5.5,7.5,5.0,5.0,
+Séng Cù,mua,6,7,10,11,105,115,500,1400,16,33,70,90,1200,1800,5.5,7.5,3.5,4.0,
+IR64,dong_xuan,1,2,5,6,95,115,,,20,30,70,90,1200,1800,5.5,7.5,5.7,8.0,
+IR64,he_thu,5,6,8,9,95,115,,,20,30,70,90,1200,1800,5.5,7.5,5.7,8.0,
+Cà phê,perennial,4,6,9,3,720,1440,700,1700,18,25,60,70,,,5.0,6.5,2.5,3.5,3000
+Cà chua,dong_xuan,10,11,1,2,90,120,,,18,29,60,70,,,6.0,7.0,65,70,
+Cà chua,trai_vu,8,9,12,3,90,180,,,18,29,60,70,,,6.0,7.0,70,80,
