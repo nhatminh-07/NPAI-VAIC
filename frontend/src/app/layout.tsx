@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: copy.appName,
   description: copy.rolePicker.subtitle,
   icons: {
-    icon: '/favicon.svg',
+    icon: '/icon.png',
   },
 };
 

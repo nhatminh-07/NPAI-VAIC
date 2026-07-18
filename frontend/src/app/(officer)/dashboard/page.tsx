@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { copy } from '@/constants/copy';
@@ -141,29 +142,21 @@ export default function DashboardPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-ink-primary">{copy.dashboard.title}</h1>
         <div className="flex flex-wrap gap-3">
-          <select
-            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          <Select
+            className="min-h-[40px]"
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-          >
-            {quarterOptions.map((q) => (
-              <option key={q.value} value={q.value}>
-                {q.labelVi}
-              </option>
-            ))}
-          </select>
-          <select
-            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-            value={cropId ?? ''}
-            onChange={(e) => setCropId(e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">{copy.dashboard.allCrops}</option>
-            {crops.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nameVi}
-              </option>
-            ))}
-          </select>
+            onChange={setPeriod}
+            options={quarterOptions.map((q) => ({ value: q.value, label: q.labelVi }))}
+          />
+          <Select
+            className="min-h-[40px]"
+            value={cropId !== undefined ? String(cropId) : ''}
+            onChange={(v) => setCropId(v ? Number(v) : undefined)}
+            options={[
+              { value: '', label: copy.dashboard.allCrops },
+              ...crops.map((c) => ({ value: String(c.id), label: c.nameVi })),
+            ]}
+          />
         </div>
       </div>
 
@@ -186,7 +179,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {data.kpis.map((kpi) => (
-                <Card key={kpi.id}>
+                <Card key={kpi.id} tint>
                   <p className="text-sm font-medium text-ink-secondary">{kpi.labelVi}</p>
                   <p className="mt-1 text-3xl font-extrabold text-ink-primary">
                     {formatNumber(kpi.value)} <span className="text-base font-semibold text-ink-secondary">{kpi.unit}</span>
@@ -200,7 +193,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <Card>
+          <Card tint>
             <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.districtYieldChartTitle}</h2>
             {data.districtYield.length === 0 ? (
               <EmptyState tone="offline" title={copy.common.empty} />
@@ -222,7 +215,7 @@ export default function DashboardPage() {
           </Card>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
+            <Card tint>
               <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.diseaseCasesChartTitle}</h2>
               {data.diseaseCases.length === 0 ? (
                 <EmptyState tone="offline" title={copy.common.empty} />
@@ -251,7 +244,7 @@ export default function DashboardPage() {
               )}
             </Card>
 
-            <Card>
+            <Card tint>
               <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.diseaseTrendChartTitle}</h2>
               {data.diseaseTrend.length === 0 ? (
                 <EmptyState tone="offline" title={copy.common.empty} />
@@ -271,7 +264,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <Card>
+          <Card tint>
             <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.rankingTableTitle}</h2>
             {sortedRankings.length === 0 ? (
               <EmptyState tone="offline" title={copy.common.empty} />

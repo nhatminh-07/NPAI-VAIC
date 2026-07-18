@@ -1,6 +1,8 @@
 import type {
+  CropType,
   DashboardResult,
   DiseaseDetectionResult,
+  DiseaseReportResult,
   MarketPriceResult,
   YieldForecastResult,
   YieldInput,
@@ -38,13 +40,31 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function detectDisease(file: File): Promise<DiseaseDetectionResult> {
+export async function detectDisease(file: File, cropType: CropType, affectedPlantCount: number): Promise<DiseaseDetectionResult> {
   const formData = new FormData();
   formData.append('image', file);
+  formData.append('cropType', cropType);
+  formData.append('affectedPlantCount', String(affectedPlantCount));
   return request<DiseaseDetectionResult>('/disease/detect', {
     method: 'POST',
     body: formData,
   });
+}
+
+export async function getDiseaseReport(): Promise<DiseaseReportResult> {
+  const raw = await request<{
+    reports?: Array<{
+      id: number;
+      district: string;
+      cropType: DiseaseReportResult['reports'][number]['cropType'];
+      diseaseName: string;
+      severity: DiseaseReportResult['reports'][number]['severity'];
+      affectedPlantCount: number;
+      reportedAt: string;
+    }>;
+  }>('/disease-report');
+
+  return { reports: raw.reports ?? [] };
 }
 
 export async function predictYield(input: YieldInput): Promise<YieldForecastResult> {

@@ -47,7 +47,7 @@ export function FarmerShell({ children }: FarmerShellProps) {
 
   return (
     <div className="flex min-h-svh flex-col bg-plane">
-      <header className="flex items-center justify-between border-b border-line-border bg-surface/90 px-4 py-3 backdrop-blur-sm">
+      <header className="flex items-center justify-between border-b border-line-border bg-gradient-to-r from-surface/90 to-brand-50/70 px-4 py-3 backdrop-blur-sm">
         <Logo withWordmark />
         <Link href="/" className="min-h-[44px] px-2 py-2 text-sm font-medium text-brand-700">
           {copy.nav.switchRole}
@@ -56,7 +56,7 @@ export function FarmerShell({ children }: FarmerShellProps) {
       <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24">
         <PageTransition>{children}</PageTransition>
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line-border bg-surface/95 backdrop-blur-sm">
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line-border bg-gradient-to-r from-surface/95 to-brand-50/60 backdrop-blur-sm">
         <div className="mx-auto flex max-w-md items-stretch justify-around">
           {tabs.map((tab) => {
             const isActive = pathname === tab.to;
