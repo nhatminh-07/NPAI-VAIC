@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface SelectOption {
   value: string;
@@ -16,26 +17,85 @@ interface SelectProps {
   'aria-label'?: string;
 }
 
+interface Position {
+  top: number;
+  left: number;
+  width: number;
+}
+
 export function Select({ id, value, onChange, options, className = '', ...rest }: SelectProps) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<Position | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLUListElement>(null);
   const selected = options.find((opt) => opt.value === value);
+
+  function openDropdown() {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    // Vị trí thô ban đầu (bám theo trigger); được chỉnh lại ngay bên dưới trước khi
+    // trình duyệt vẽ khung hình, để tránh tràn ra ngoài viewport.
+    setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setOpen(true);
+  }
+
+  // Panel được render qua portal (position: fixed, gắn vào document.body) thay vì
+  // absolute bên trong container, để không bị các ancestor có overflow-y-auto/hidden
+  // (vd. <main> trong OfficerShell) cắt (clip) mất phần tràn ra ngoài khung nhìn của chúng.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const trigger = containerRef.current;
+    const panel = panelRef.current;
+    if (!trigger || !panel) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+
+    let left = triggerRect.left;
+    if (left + panelRect.width > vw - margin) {
+      left = Math.max(margin, vw - panelRect.width - margin);
+    }
+
+    let top = triggerRect.bottom + 4;
+    if (top + panelRect.height > vh - margin) {
+      top = triggerRect.top - panelRect.height - 4;
+    }
+
+    setPos((prev) =>
+      prev && prev.top === top && prev.left === left && prev.width === triggerRect.width
+        ? prev
+        : { top, left, width: triggerRect.width },
+    );
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false);
     }
+    // Đóng dropdown khi bất kỳ ancestor nào cuộn (kể cả <main> có overflow riêng) -
+    // dùng capture:true vì sự kiện scroll của phần tử con không bubble lên.
+    function handleScroll() {
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
     };
   }, [open]);
 
@@ -44,7 +104,7 @@ export function Select({ id, value, onChange, options, className = '', ...rest }
       <button
         id={id}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? setOpen(false) : openDropdown())}
         aria-haspopup="listbox"
         aria-expanded={open}
         {...rest}
@@ -63,34 +123,39 @@ export function Select({ id, value, onChange, options, className = '', ...rest }
         </svg>
       </button>
 
-      {open && (
-        <ul
-          role="listbox"
-          aria-activedescendant={selected ? `${id ?? 'select'}-opt-${selected.value}` : undefined}
-          className="absolute left-0 top-full z-20 mt-1 max-h-60 w-full min-w-max overflow-auto rounded-lg border border-line-border bg-white py-1 shadow-lg"
-        >
-          {options.map((opt) => {
-            const isSelected = opt.value === value;
-            return (
-              <li
-                key={opt.value}
-                id={`${id ?? 'select'}-opt-${opt.value}`}
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                className={`cursor-pointer whitespace-nowrap px-3 py-2 text-base transition-colors ${
-                  isSelected ? 'bg-brand-50 font-semibold text-brand-700' : 'text-ink-primary hover:bg-brand-50/70'
-                }`}
-              >
-                {opt.label}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {open &&
+        pos &&
+        createPortal(
+          <ul
+            ref={panelRef}
+            role="listbox"
+            aria-activedescendant={selected ? `${id ?? 'select'}-opt-${selected.value}` : undefined}
+            style={{ top: pos.top, left: pos.left, minWidth: pos.width }}
+            className="fixed z-50 max-h-60 w-max max-w-[calc(100vw-16px)] overflow-auto rounded-lg border border-line-border bg-white py-1 shadow-lg"
+          >
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <li
+                  key={opt.value}
+                  id={`${id ?? 'select'}-opt-${opt.value}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={`cursor-pointer whitespace-nowrap px-3 py-2 text-base transition-colors ${
+                    isSelected ? 'bg-brand-50 font-semibold text-brand-700' : 'text-ink-primary hover:bg-brand-50/70'
+                  }`}
+                >
+                  {opt.label}
+                </li>
+              );
+            })}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }
