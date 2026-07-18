@@ -4,7 +4,7 @@ interface ConfidenceBarProps {
 }
 
 function toneFor(confidence: number): { bar: string; text: string } {
-  if (confidence >= 0.85) return { bar: 'bg-status-good', text: 'text-status-good' };
+  if (confidence >= 0.85) return { bar: 'bg-brand-600', text: 'text-brand-700' };
   if (confidence >= 0.6) return { bar: 'bg-status-warning', text: 'text-[#8a5a00]' };
   return { bar: 'bg-status-critical', text: 'text-status-critical' };
 }

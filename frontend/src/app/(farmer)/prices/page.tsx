@@ -99,8 +99,8 @@ export default function PricesPage() {
               onClick={() => setCropId(c.id)}
               className={`min-h-[44px] flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
                 isSelected
-                  ? 'bg-series-1 text-white'
-                  : 'border border-line-border bg-white text-ink-primary hover:bg-plane'
+                  ? 'bg-brand-600 text-white'
+                  : 'border border-line-border bg-white text-ink-primary hover:border-brand-300 hover:bg-brand-50'
               }`}
             >
               {c.nameVi}
@@ -148,13 +148,13 @@ export default function PricesPage() {
             <Card>
               <div className="mb-2 flex items-center gap-4 text-sm">
                 <span className="flex items-center gap-1.5 text-ink-secondary">
-                  <span className="h-0.5 w-4 bg-series-1" /> {copy.prices.chartLegendHistory}
+                  <span className="h-0.5 w-4 bg-brand-600" /> {copy.prices.chartLegendHistory}
                 </span>
                 <span className="flex items-center gap-1.5 text-ink-secondary">
-                  <span className="h-0.5 w-4 border-t-2 border-dashed border-series-6" /> {copy.prices.chartLegendForecast}
+                  <span className="h-0.5 w-4 border-t-2 border-dashed border-[#d97706]" /> {copy.prices.chartLegendForecast}
                 </span>
                 <span className="flex items-center gap-1.5 text-ink-secondary">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-series-6/25" /> {copy.prices.confidenceBandLabel}
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#d97706]/25" /> {copy.prices.confidenceBandLabel}
                 </span>
               </div>
               <div className="h-64 w-full">
@@ -176,6 +176,7 @@ export default function PricesPage() {
                       tickFormatter={(v: number) => formatVnd(v)}
                     />
                     <Tooltip
+                      isAnimationActive={false}
                       formatter={(value, name) => [
                         `${formatVnd(Number(value))} ${data.unit}`,
                         name === 'price' ? copy.prices.chartLegendHistory : copy.prices.chartLegendForecast,
@@ -186,7 +187,7 @@ export default function PricesPage() {
                     <Area
                       dataKey="band"
                       stroke="none"
-                      fill="#eb6834"
+                      fill="#d97706"
                       fillOpacity={0.15}
                       isAnimationActive={false}
                       connectNulls
@@ -194,7 +195,7 @@ export default function PricesPage() {
                     <Line
                       type="monotone"
                       dataKey="price"
-                      stroke="#2a78d6"
+                      stroke="#16a34a"
                       strokeWidth={2}
                       dot={false}
                       isAnimationActive={false}
@@ -203,7 +204,7 @@ export default function PricesPage() {
                     <Line
                       type="monotone"
                       dataKey="forecastPrice"
-                      stroke="#eb6834"
+                      stroke="#d97706"
                       strokeWidth={2}
                       strokeDasharray="5 4"
                       dot={false}

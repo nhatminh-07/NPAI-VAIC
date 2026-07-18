@@ -88,7 +88,7 @@ export default function ScanPage() {
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
           className={`flex min-h-[220px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 text-center transition-colors ${
-            isDragOver ? 'border-series-1 bg-series-1/5' : 'border-line-axis bg-surface'
+            isDragOver ? 'border-brand-500 bg-brand-50' : 'border-line-axis bg-surface hover:border-brand-300 hover:bg-brand-50/40'
           }`}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-14 w-14 text-ink-muted">
@@ -186,7 +186,7 @@ export default function ScanPage() {
                           type="checkbox"
                           checked={!!checked[i]}
                           onChange={() => setChecked((c) => ({ ...c, [i]: !c[i] }))}
-                          className="mt-1 h-5 w-5 shrink-0 accent-series-1"
+                          className="mt-1 h-5 w-5 shrink-0 accent-brand-600"
                         />
                         <span
                           className={`text-base ${checked[i] ? 'text-ink-muted line-through' : 'text-ink-primary'}`}

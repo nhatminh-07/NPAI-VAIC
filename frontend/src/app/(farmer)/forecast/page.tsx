@@ -85,7 +85,7 @@ export default function ForecastPage() {
             </label>
             <select
               id="crop"
-              className="min-h-[44px] w-full rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary"
+              className="min-h-[44px] w-full rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               value={form.cropType}
               onChange={(e) => setForm((f) => ({ ...f, cropType: e.target.value as CropType }))}
             >
@@ -107,8 +107,10 @@ export default function ForecastPage() {
               min={0.1}
               step={0.1}
               placeholder={copy.forecast.areaPlaceholder}
-              className={`min-h-[44px] w-full rounded-lg border bg-white px-3 text-base text-ink-primary ${
-                touched && errors.areaHa ? 'border-status-critical' : 'border-line-axis'
+              className={`min-h-[44px] w-full rounded-lg border bg-white px-3 text-base text-ink-primary transition-colors focus:outline-none focus:ring-2 ${
+                touched && errors.areaHa
+                  ? 'border-status-critical focus:ring-status-critical/30'
+                  : 'border-line-axis focus:border-brand-500 focus:ring-brand-500/30'
               }`}
               value={form.areaHa}
               onChange={(e) => setForm((f) => ({ ...f, areaHa: Number(e.target.value) }))}
@@ -124,8 +126,10 @@ export default function ForecastPage() {
             <input
               id="planting-date"
               type="date"
-              className={`min-h-[44px] w-full rounded-lg border bg-white px-3 text-base text-ink-primary ${
-                touched && errors.plantingDate ? 'border-status-critical' : 'border-line-axis'
+              className={`min-h-[44px] w-full rounded-lg border bg-white px-3 text-base text-ink-primary transition-colors focus:outline-none focus:ring-2 ${
+                touched && errors.plantingDate
+                  ? 'border-status-critical focus:ring-status-critical/30'
+                  : 'border-line-axis focus:border-brand-500 focus:ring-brand-500/30'
               }`}
               value={form.plantingDate}
               onChange={(e) => setForm((f) => ({ ...f, plantingDate: e.target.value }))}
@@ -140,7 +144,7 @@ export default function ForecastPage() {
             </label>
             <select
               id="district"
-              className="min-h-[44px] w-full rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary"
+              className="min-h-[44px] w-full rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               value={form.district}
               onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
             >
@@ -174,9 +178,9 @@ export default function ForecastPage() {
 
       {status === 'success' && result && (
         <div className="mt-4 space-y-4">
-          <Card>
+          <Card className="border-brand-200 bg-brand-50/60">
             <h2 className="mb-1 text-base font-medium text-ink-secondary">{copy.forecast.predictedYieldLabel}</h2>
-            <p className="text-4xl font-extrabold text-ink-primary">
+            <p className="text-4xl font-extrabold text-brand-700">
               {result.predictedYieldTPerHa} <span className="text-xl font-semibold text-ink-secondary">tấn/ha</span>
             </p>
             <p className="mt-1 text-base text-ink-secondary">

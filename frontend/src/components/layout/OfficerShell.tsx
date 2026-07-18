@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { copy } from '@/constants/copy';
+import { Logo } from '@/components/ui/Logo';
 
 interface OfficerShellProps {
   children: ReactNode;
@@ -14,17 +15,18 @@ export function OfficerShell({ children }: OfficerShellProps) {
   const isDashboardActive = pathname === '/dashboard';
 
   return (
-    <div className="flex min-h-svh bg-plane">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-line-border bg-surface">
-        <div className="border-b border-line-border px-5 py-5">
-          <span className="text-lg font-bold text-ink-primary">{copy.appName}</span>
+    <div className="flex h-svh overflow-hidden bg-plane">
+      <aside className="relative flex h-full w-64 shrink-0 flex-col border-r border-line-border bg-surface">
+        <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 via-teal-600 to-brand-700" />
+        <div className="shrink-0 border-b border-line-border px-5 py-5">
+          <Logo withWordmark />
         </div>
-        <nav className="flex-1 px-3 py-4">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           <Link
             href="/dashboard"
             aria-current={isDashboardActive ? 'page' : undefined}
-            className={`flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-base font-medium ${
-              isDashboardActive ? 'bg-series-1/10 text-series-1' : 'text-ink-secondary hover:bg-plane'
+            className={`flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-base font-medium transition-colors ${
+              isDashboardActive ? 'bg-teal-600/10 text-teal-700' : 'text-ink-secondary hover:bg-plane'
             }`}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
@@ -33,7 +35,7 @@ export function OfficerShell({ children }: OfficerShellProps) {
             {copy.nav.dashboard}
           </Link>
         </nav>
-        <div className="border-t border-line-border px-3 py-4">
+        <div className="shrink-0 border-t border-line-border px-3 py-4">
           <Link
             href="/"
             className="flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-base font-medium text-ink-muted hover:bg-plane"

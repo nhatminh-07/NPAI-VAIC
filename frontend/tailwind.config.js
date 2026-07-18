@@ -6,6 +6,22 @@ export default {
       colors: {
         surface: '#fcfcfb',
         plane: '#f9f9f7',
+        brand: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+        },
+        teal: {
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+        },
         ink: {
           primary: '#0b0b0b',
           secondary: '#52514e',
@@ -34,7 +50,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        sans: ['var(--font-be-vietnam-pro)', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
       },
     },
   },

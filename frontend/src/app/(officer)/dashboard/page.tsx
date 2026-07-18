@@ -26,7 +26,7 @@ import type { DashboardResult, DistrictRanking } from '@/types/api';
 type Status = 'idle' | 'loading' | 'success' | 'error';
 type SortKey = keyof Pick<DistrictRanking, 'district' | 'yieldTPerHa' | 'outputTons' | 'diseaseCases'>;
 
-const seriesPalette = ['#2a78d6', '#008300', '#e87ba4', '#eda100', '#1baf7a'];
+const seriesPalette = ['#16a34a', '#0d9488', '#84a98c', '#d97706', '#65a30d'];
 const quarterOptions = recentQuarterOptions();
 
 function DeltaLabel({ value, suffix }: { value: number; suffix: string }) {
@@ -142,7 +142,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-ink-primary">{copy.dashboard.title}</h1>
         <div className="flex flex-wrap gap-3">
           <select
-            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary"
+            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
           >
@@ -153,7 +153,7 @@ export default function DashboardPage() {
             ))}
           </select>
           <select
-            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary"
+            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             value={cropId ?? ''}
             onChange={(e) => setCropId(e.target.value ? Number(e.target.value) : undefined)}
           >
@@ -211,10 +211,10 @@ export default function DashboardPage() {
                     <CartesianGrid stroke="#e1e0d9" vertical={false} />
                     <XAxis dataKey="district" tick={{ fontSize: 12, fill: '#898781' }} stroke="#c3c2b7" interval={0} angle={-20} textAnchor="end" height={60} />
                     <YAxis tick={{ fontSize: 12, fill: '#898781' }} stroke="#c3c2b7" width={48} />
-                    <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
+                    <Tooltip isAnimationActive={false} contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
                     <Legend wrapperStyle={{ fontSize: 13 }} />
-                    <Bar dataKey="currentYieldTPerHa" name={copy.dashboard.currentPeriod} fill="#2a78d6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="previousYieldTPerHa" name={copy.dashboard.previousPeriod} fill="#008300" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="currentYieldTPerHa" name={copy.dashboard.currentPeriod} fill="#16a34a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="previousYieldTPerHa" name={copy.dashboard.previousPeriod} fill="#a3b18a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                         stroke="#c3c2b7"
                         width={110}
                       />
-                      <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
+                      <Tooltip isAnimationActive={false} contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
                       <Bar dataKey="cases" name={copy.dashboard.rankingColumns.diseaseCases} radius={[0, 4, 4, 0]}>
                         {data.diseaseCases.map((entry, i) => (
                           <Cell key={entry.diseaseName} fill={seriesPalette[i % seriesPalette.length]} />
@@ -262,8 +262,8 @@ export default function DashboardPage() {
                       <CartesianGrid stroke="#e1e0d9" vertical={false} />
                       <XAxis dataKey="quarterLabel" tick={{ fontSize: 12, fill: '#898781' }} stroke="#c3c2b7" />
                       <YAxis tick={{ fontSize: 12, fill: '#898781' }} stroke="#c3c2b7" width={48} />
-                      <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
-                      <Line type="monotone" dataKey="cases" stroke="#eb6834" strokeWidth={2} dot={{ r: 4 }} />
+                      <Tooltip isAnimationActive={false} contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
+                      <Line type="monotone" dataKey="cases" stroke="#d97706" strokeWidth={2} dot={{ r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
