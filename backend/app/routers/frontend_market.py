@@ -64,7 +64,7 @@ async def get_market_price_frontend(
             for p in result["history"]
         ],
         "forecast": [
-            {"date": p["date"], "price": p["price"], "lowerBand": p["price"] * 0.95, "upperBand": p["price"] * 1.05}
+            {"date": p["date"], "price": p["price"], "lowerBand": p["price"] * 0.90, "upperBand": p["price"] * 1.10}
             for p in result["forecast"]
         ],
         "currentPrice": result["current_price"],
