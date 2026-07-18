@@ -83,3 +83,18 @@ class DashboardResponse(BaseModel):
     disease_case_count: PeriodMetric
     disease_rate_percent: PeriodMetric
     year_over_year_note: str
+
+
+# ---------- AI Assistant (Chatbot) ----------
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[ChatMessage] = Field(default_factory=list)
+
+
+class ChatResponse(BaseModel):
+    reply: str
