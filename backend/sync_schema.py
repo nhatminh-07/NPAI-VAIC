@@ -35,15 +35,40 @@ def sync_schema():
                 crop_id INTEGER REFERENCES crops(id)
             )""",
 
-            # DiseaseDetections
+            # FarmingRegions (vùng canh tác do cán bộ tạo)
+            """CREATE TABLE IF NOT EXISTS farming_regions (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR NOT NULL,
+                district VARCHAR NOT NULL,
+                area_ha FLOAT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+
+            # FarmingPeriods (vụ canh tác nông dân khai báo)
+            """CREATE TABLE IF NOT EXISTS farming_periods (
+                id SERIAL PRIMARY KEY,
+                region_id INTEGER REFERENCES farming_regions(id),
+                crop_type VARCHAR NOT NULL,
+                area_ha FLOAT NOT NULL,
+                crop_count INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+
+            # DiseaseDetections (schema mới - hợp nhất)
             """CREATE TABLE IF NOT EXISTS disease_detections (
                 id SERIAL PRIMARY KEY,
                 farm_id INTEGER REFERENCES farms(id),
+                district VARCHAR NOT NULL DEFAULT 'Điện Biên',
+                crop_type VARCHAR NOT NULL,
                 image_url VARCHAR NOT NULL,
                 disease_label VARCHAR NOT NULL,
+                scientific_name VARCHAR,
                 confidence FLOAT NOT NULL,
+                severity VARCHAR,
+                affected_plant_count INTEGER,
                 recommendation TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                farming_region_id INTEGER REFERENCES farming_regions(id)
             )""",
 
             # YieldPredictions
@@ -91,6 +116,34 @@ def sync_schema():
                 print(f"  ✅ Tạo bảng: {table_name}")
             except Exception as e:
                 print(f"  ⚠️ Lỗi: {e}")
+
+        conn.commit()
+
+        # Thêm column farming_region_id cho disease_detections nếu chưa có
+        new_disease_columns = [
+            ("district", "VARCHAR NOT NULL DEFAULT 'Điện Biên'"),
+            ("crop_type", "VARCHAR NOT NULL"),
+            ("scientific_name", "VARCHAR"),
+            ("severity", "VARCHAR"),
+            ("affected_plant_count", "INTEGER"),
+            ("farming_region_id", "INTEGER REFERENCES farming_regions(id)"),
+        ]
+        for col_name, col_def in new_disease_columns:
+            try:
+                conn.execute(text(
+                    f"ALTER TABLE disease_detections ADD COLUMN IF NOT EXISTS {col_name} {col_def}"
+                ))
+                print(f"  ✅ Thêm column: disease_detections.{col_name}")
+            except Exception as e:
+                print(f"  ⚠️ Column {col_name}: {e}")
+
+        # Thêm column cho farms nếu chưa có
+        try:
+            conn.execute(text(
+                "ALTER TABLE disease_detections ALTER COLUMN image_url DROP NOT NULL"
+            ))
+        except Exception:
+            pass
 
         conn.commit()
 

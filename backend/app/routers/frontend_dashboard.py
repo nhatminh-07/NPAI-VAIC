@@ -24,6 +24,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from sqlalchemy import func
 from app.database import get_db
 from app.models import Farm, DiseaseDetection, Crop, FarmingRegion, FarmingPeriod
 
@@ -120,13 +121,28 @@ async def get_dashboard_frontend(
     # Tổng diện tích KHÔNG lọc theo kỳ - diện tích canh tác là cộng dồn (cán bộ
     # cần thấy tổng diện tích canh tác hiện tại của tỉnh, không phải diện tích
     # canh tác TRONG kỳ). Chỉ filter theo crop nếu có chọn.
-    cur_area = get_total_area(None, None)
+    cur_area = db.query(func.coalesce(func.sum(FarmingRegion.area_ha), 0.0)).scalar() or 0.0
     prev_area = cur_area  # diện tích cộng dồn không đổi theo kỳ
 
-    cur_yield = get_avg_yield(current_start, current_end)
-    prev_yield = get_avg_yield(prev_start, prev_end)
-    cur_disease = get_disease_count(current_start, current_end)
-    prev_disease = get_disease_count(prev_start, prev_end)
+    # Năng suất TB kỳ hiện tại
+    if periods_cur:
+        total_yield_area = sum(p.area_ha * _period_yield_per_ha(p) for p in periods_cur)
+        total_area = sum(p.area_ha for p in periods_cur)
+        cur_yield = total_yield_area / total_area if total_area > 0 else 0.0
+    else:
+        cur_yield = 0.0
+    if periods_prev:
+        total_yield_area = sum(p.area_ha * _period_yield_per_ha(p) for p in periods_prev)
+        total_area = sum(p.area_ha for p in periods_prev)
+        prev_yield = total_yield_area / total_area if total_area > 0 else 0.0
+    else:
+        prev_yield = 0.0
+
+    all_diseases = db.query(DiseaseDetection).all()
+    diseases_cur = [d for d in all_diseases if _in_range(d.created_at, current_start, current_end)]
+    diseases_prev = [d for d in all_diseases if _in_range(d.created_at, prev_start, prev_end)]
+    cur_disease = len(diseases_cur)
+    prev_disease = len(diseases_prev)
 
     total_farms = max(db.query(func.count(Farm.id)).scalar() or 1, 1)
     # Tỷ lệ sâu bệnh = (số ca bệnh trong kỳ) / (tổng farm) * 100
