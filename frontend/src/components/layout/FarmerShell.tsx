@@ -36,7 +36,8 @@ const tabs = [
     label: copy.nav.prices,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m0 0c-2.2 0-4-1.1-4-2.5M12 21c2.2 0 4-1.1 4-2.5M12 3c2.2 0 4 1.1 4 2.5S14.2 8 12 8s-4 1.1-4 2.5S9.8 13 12 13s4 1.1 4 2.5" />
+        <line x1="12" y1="2" x2="12" y2="22" strokeLinecap="round" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
       </svg>
     ),
   },

@@ -58,6 +58,7 @@ export const copy = {
     heatmapPlaceholder: 'Bản đồ nhiệt vùng bệnh sẽ được hỗ trợ trong phiên bản tiếp theo',
     saveReport: 'Lưu báo cáo',
     retake: 'Chụp lại',
+    skip: 'Bỏ qua',
     errorTitle: 'Không thể phân tích ảnh',
   },
 

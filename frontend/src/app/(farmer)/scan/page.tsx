@@ -259,12 +259,15 @@ export default function ScanPage() {
                 </ul>
               </Card>
 
+              <Button fullWidth onClick={handleRetake}>
+                {copy.scan.saveReport}
+              </Button>
               <div className="flex gap-3">
                 <Button variant="secondary" fullWidth onClick={handleRetake}>
                   {copy.scan.retake}
                 </Button>
-                <Button fullWidth onClick={() => {}}>
-                  {copy.scan.saveReport}
+                <Button variant="secondary" fullWidth onClick={handleRetake}>
+                  {copy.scan.skip}
                 </Button>
               </div>
             </div>
