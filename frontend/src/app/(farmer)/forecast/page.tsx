@@ -150,7 +150,7 @@ export default function ForecastPage() {
             <Select
               id="district"
               className="min-h-[44px]"
-              value={form.district}
+              value={form.district ?? ''}
               onChange={(v) => setForm((f) => ({ ...f, district: v }))}
               options={districts.map((d) => ({ value: d, label: d }))}
             />
