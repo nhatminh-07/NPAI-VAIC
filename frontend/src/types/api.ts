@@ -234,3 +234,36 @@ export interface ChatMessage {
 export interface ChatResponse {
   reply: string; // câu trả lời của trợ lý AI, dạng văn bản tiếng Việt, sẵn sàng hiển thị trực tiếp
 }
+
+// ---------- 8. Quản lý vùng canh tác & vụ canh tác ----------
+// Tab "Quản lý" mới: cán bộ tạo VÙNG CANH TÁC (khu vực canh tác thuộc 1 huyện của
+// Điện Biên), sau đó nông dân chọn 1 vùng đã có sẵn khi khai báo VỤ CANH TÁC của
+// mình. Backend CHƯA có 2 endpoint này - xem chi tiết contract tại các hàm
+// getFarmingRegions/createFarmingRegion/getFarmingPeriods/createFarmingPeriod
+// trong src/lib/api.ts.
+
+export interface FarmingRegion {
+  id: number;
+  name: string; // tên vùng canh tác, cán bộ tự đặt, vd "Vùng lúa Mường Ảng 1"
+  district: string; // huyện thuộc tỉnh Điện Biên, khớp giá trị ở constants/districts.ts
+  areaHa: number; // diện tích toàn vùng (ha)
+  createdAt: string; // ISO date
+}
+
+export interface FarmingRegionListResult {
+  regions: FarmingRegion[];
+}
+
+export interface FarmingPeriod {
+  id: number;
+  regionId: number; // tham chiếu tới FarmingRegion.id (vùng do cán bộ tạo)
+  regionName: string; // tên vùng, backend join sẵn để FE không phải tự tra cứu
+  cropType: CropType;
+  areaHa: number; // diện tích nông dân canh tác trong vụ này (ha)
+  cropCount: number; // số lượng cây trồng trong vụ này
+  createdAt: string; // ISO date
+}
+
+export interface FarmingPeriodListResult {
+  periods: FarmingPeriod[];
+}

@@ -5,6 +5,10 @@ import type {
   DashboardResult,
   DiseaseDetectionResult,
   DiseaseReportResult,
+  FarmingPeriod,
+  FarmingPeriodListResult,
+  FarmingRegion,
+  FarmingRegionListResult,
   MarketPriceResult,
   YieldForecastResult,
   YieldInput,
@@ -232,5 +236,69 @@ export async function sendChatMessage(message: string, history: ChatMessage[] = 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, history }),
+  });
+}
+
+/**
+ * GHI CHÚ CHO BACKEND ENGINEER (Quản lý vùng canh tác & vụ canh tác):
+ * ---------------------------------------------------------------------
+ * 4 hàm bên dưới gọi 4 endpoint MỚI mà backend CHƯA có - cần implement:
+ *
+ *   POST /farming-regions   - cán bộ tạo 1 vùng canh tác (trang /management của cán bộ)
+ *   GET  /farming-regions   - lấy danh sách vùng canh tác (dùng ở cả trang cán bộ và
+ *                             dropdown chọn vùng ở trang /management của nông dân)
+ *   POST /farming-periods   - nông dân khai báo 1 vụ canh tác, gắn với 1 vùng có sẵn
+ *   GET  /farming-periods   - lấy danh sách vụ canh tác đã khai báo
+ *
+ * Request POST /farming-regions (JSON):
+ *   { "name": string, "district": string, "areaHa": number }
+ * Response (JSON), status 200 - trả về bản ghi vừa tạo:
+ *   { "id": number, "name": string, "district": string, "areaHa": number, "createdAt": string (ISO date) }
+ *
+ * Response GET /farming-regions (JSON):
+ *   { "regions": [ { id, name, district, areaHa, createdAt }, ... ] }
+ *
+ * Request POST /farming-periods (JSON):
+ *   { "regionId": number, "cropType": "rice"|"coffee"|"vegetable", "areaHa": number, "cropCount": number }
+ * Response (JSON), status 200 - trả về bản ghi vừa tạo (kèm regionName đã join sẵn):
+ *   { "id": number, "regionId": number, "regionName": string, "cropType": string,
+ *     "areaHa": number, "cropCount": number, "createdAt": string (ISO date) }
+ *
+ * Response GET /farming-periods (JSON):
+ *   { "periods": [ { id, regionId, regionName, cropType, areaHa, cropCount, createdAt }, ... ] }
+ *
+ * Lưu ý: app hiện KHÔNG có đăng nhập/phân quyền thực sự (chỉ có màn chọn vai trò ở
+ * trang chủ, không xác thực) - nên các endpoint này KHÔNG cần userId/token, cứ tạo/đọc
+ * chung 1 danh sách cho tất cả người dùng, giống hệt cách /disease-report đang làm.
+ * Xem thêm gợi ý thiết kế bảng ở models.py trong phần trao đổi riêng với backend engineer.
+ */
+export async function getFarmingRegions(): Promise<FarmingRegionListResult> {
+  const raw = await request<{ regions?: FarmingRegion[] }>('/farming-regions');
+  return { regions: raw.regions ?? [] };
+}
+
+export async function createFarmingRegion(input: { name: string; district: string; areaHa: number }): Promise<FarmingRegion> {
+  return request<FarmingRegion>('/farming-regions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getFarmingPeriods(): Promise<FarmingPeriodListResult> {
+  const raw = await request<{ periods?: FarmingPeriod[] }>('/farming-periods');
+  return { periods: raw.periods ?? [] };
+}
+
+export async function createFarmingPeriod(input: {
+  regionId: number;
+  cropType: CropType;
+  areaHa: number;
+  cropCount: number;
+}): Promise<FarmingPeriod> {
+  return request<FarmingPeriod>('/farming-periods', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
   });
 }
