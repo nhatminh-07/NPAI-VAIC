@@ -4,6 +4,9 @@ import type {
   MarketPriceResult,
   YieldForecastResult,
   YieldInput,
+  CropRecommendationResult,
+  CurrentWeather,
+  WeatherForecastResult,
 } from '@/types/api';
 
 // The only module aware of the backend's transport details (base URL, HTTP
@@ -103,4 +106,41 @@ export async function getDashboard(period: string, cropId?: number): Promise<Das
     diseaseTrend: raw.diseaseTrend ?? [],
     districtRankings: raw.districtRankings ?? [],
   };
+}
+
+export interface CropRecommendInput {
+  N: number;
+  P: number;
+  K: number;
+  temperature: number;
+  humidity: number;
+  ph: number;
+  rainfall: number;
+}
+
+export async function recommendCrop(input: CropRecommendInput): Promise<CropRecommendationResult> {
+  const res = await request<{ success: boolean; data: CropRecommendationResult }>('/crop/recommend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return res.data;
+}
+
+export async function getCurrentWeather(lat?: number, lon?: number): Promise<CurrentWeather> {
+  const params = new URLSearchParams();
+  if (lat !== undefined) params.set('lat', String(lat));
+  if (lon !== undefined) params.set('lon', String(lon));
+  const query = params.toString();
+  const res = await request<{ success: boolean; data: CurrentWeather }>(`/weather/current${query ? '?' + query : ''}`);
+  return res.data;
+}
+
+export async function getWeatherForecast(lat?: number, lon?: number): Promise<WeatherForecastResult> {
+  const params = new URLSearchParams();
+  if (lat !== undefined) params.set('lat', String(lat));
+  if (lon !== undefined) params.set('lon', String(lon));
+  const query = params.toString();
+  const res = await request<{ success: boolean; data: WeatherForecastResult }>(`/weather/forecast${query ? '?' + query : ''}`);
+  return res.data;
 }

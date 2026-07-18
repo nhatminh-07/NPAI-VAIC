@@ -114,3 +114,43 @@ export interface DashboardResult {
   diseaseTrend: DiseaseTrendPoint[];
   districtRankings: DistrictRanking[];
 }
+
+// ---------- 5. Crop recommendation ----------
+
+export interface CropRecommendationResult {
+  recommendedCrop: string;
+  cropNameVi: string;
+  season: string;
+  duration: string;
+  expectedYield: string;
+  tips: string;
+  confidence: number;
+}
+
+// ---------- 6. Weather ----------
+
+export interface CurrentWeather {
+  temperature: number;
+  humidity: number;
+  precipitation: number;
+  windSpeed: number;
+  soilTemperature: number;
+  weatherDescription: string;
+  weatherIcon: string;
+  location: string;
+}
+
+export interface DailyForecast {
+  date: string;
+  weatherDescription: string;
+  weatherIcon: string;
+  tempMax: number;
+  tempMin: number;
+  precipitation: number;
+  windMax: number;
+}
+
+export interface WeatherForecastResult {
+  location: string;
+  forecast: DailyForecast[];
+}

@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { copy } from '@/constants/copy';
+import { Logo } from '@/components/ui/Logo';
+import { PageTransition } from '@/components/layout/PageTransition';
 
 interface FarmerShellProps {
   children: ReactNode;
@@ -45,14 +47,16 @@ export function FarmerShell({ children }: FarmerShellProps) {
 
   return (
     <div className="flex min-h-svh flex-col bg-plane">
-      <header className="flex items-center justify-between border-b border-line-border bg-surface px-4 py-3">
-        <span className="text-lg font-bold text-ink-primary">{copy.appName}</span>
-        <Link href="/" className="min-h-[44px] px-2 py-2 text-sm font-medium text-series-1">
+      <header className="flex items-center justify-between border-b border-line-border bg-surface/90 px-4 py-3 backdrop-blur-sm">
+        <Logo withWordmark />
+        <Link href="/" className="min-h-[44px] px-2 py-2 text-sm font-medium text-brand-700">
           {copy.nav.switchRole}
         </Link>
       </header>
-      <main className="flex-1 overflow-y-auto pb-24">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line-border bg-surface">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24">
+        <PageTransition>{children}</PageTransition>
+      </main>
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line-border bg-surface/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-md items-stretch justify-around">
           {tabs.map((tab) => {
             const isActive = pathname === tab.to;
@@ -61,10 +65,11 @@ export function FarmerShell({ children }: FarmerShellProps) {
                 key={tab.to}
                 href={tab.to}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 text-sm font-medium ${
-                  isActive ? 'text-series-1' : 'text-ink-muted'
+                className={`relative flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 text-sm font-medium transition-colors ${
+                  isActive ? 'text-brand-600' : 'text-ink-muted'
                 }`}
               >
+                {isActive && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-brand-600" />}
                 {tab.icon}
                 {tab.label}
               </Link>
