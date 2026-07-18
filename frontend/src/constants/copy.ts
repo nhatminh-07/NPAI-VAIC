@@ -3,7 +3,7 @@
 // import và dùng qua object `copy` này, để dễ rà soát/sửa nội dung ở một chỗ duy nhất.
 
 export const copy = {
-  appName: 'AgriPlatform',
+  appName: 'Gạo Bản',
 
   common: {
     loading: 'Đang tải...',
@@ -17,7 +17,7 @@ export const copy = {
   },
 
   rolePicker: {
-    title: 'AgriPlatform',
+    title: 'Gạo Bản',
     subtitle: 'Chọn vai trò của bạn để bắt đầu',
     farmer: 'Tôi là nông dân',
     farmerDesc: 'Chẩn đoán bệnh cây, dự báo năng suất, xem giá thị trường',
