@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import type { BadgeTone } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
@@ -11,7 +12,7 @@ import { ConfidenceBar } from '@/components/ui/ConfidenceBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { copy } from '@/constants/copy';
 import { ApiError, detectDisease } from '@/lib/api';
-import type { DiseaseDetectionResult, Severity } from '@/types/api';
+import type { CropType, DiseaseDetectionResult, Severity } from '@/types/api';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -22,6 +23,12 @@ const severityTone: Record<Severity, BadgeTone> = {
   severe: 'critical',
 };
 
+const cropOptions: { value: CropType; label: string }[] = [
+  { value: 'rice', label: copy.forecast.crop.rice },
+  { value: 'coffee', label: copy.forecast.crop.coffee },
+  { value: 'vegetable', label: copy.forecast.crop.vegetable },
+];
+
 export default function ScanPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -30,7 +37,13 @@ export default function ScanPage() {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [isDragOver, setIsDragOver] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [cropType, setCropType] = useState<CropType>('rice');
+  const [affectedPlantCount, setAffectedPlantCount] = useState('');
+  const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const affectedPlantCountError =
+    affectedPlantCount !== '' && Number(affectedPlantCount) > 0 ? undefined : copy.scan.affectedPlantCountError;
 
   function selectFile(selected: File) {
     setFile(selected);
@@ -54,9 +67,11 @@ export default function ScanPage() {
 
   async function handleAnalyze() {
     if (!file) return;
+    setTouched(true);
+    if (affectedPlantCountError) return;
     setStatus('loading');
     try {
-      const res = await detectDisease(file);
+      const res = await detectDisease(file, cropType, Number(affectedPlantCount));
       setResult(res);
       setStatus('success');
     } catch (err) {
@@ -71,6 +86,9 @@ export default function ScanPage() {
     setResult(null);
     setStatus('idle');
     setChecked({});
+    setCropType('rice');
+    setAffectedPlantCount('');
+    setTouched(false);
     if (inputRef.current) inputRef.current.value = '';
   }
 
@@ -124,22 +142,64 @@ export default function ScanPage() {
           </Card>
 
           {status !== 'success' && (
-            <div className="flex gap-3">
-              <Button variant="secondary" fullWidth onClick={() => inputRef.current?.click()}>
-                {copy.scan.changePhoto}
-              </Button>
-              <Button fullWidth onClick={handleAnalyze} disabled={status === 'loading'}>
-                {status === 'loading' ? copy.scan.analyzing : copy.scan.analyzeButton}
-              </Button>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="crop-type">
+                    {copy.forecast.cropLabel}
+                  </label>
+                  <Select
+                    id="crop-type"
+                    className="min-h-[44px]"
+                    value={cropType}
+                    onChange={(v) => setCropType(v as CropType)}
+                    options={cropOptions}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="affected-plant-count">
+                    {copy.scan.affectedPlantCountLabel}
+                  </label>
+                  <input
+                    id="affected-plant-count"
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder={copy.scan.affectedPlantCountPlaceholder}
+                    className={`min-h-[44px] w-full rounded-lg border bg-white px-3 text-base text-ink-primary transition-colors focus:outline-none focus:ring-2 ${
+                      touched && affectedPlantCountError
+                        ? 'border-status-critical focus:ring-status-critical/30'
+                        : 'border-line-axis focus:border-brand-500 focus:ring-brand-500/30'
+                    }`}
+                    value={affectedPlantCount}
+                    onChange={(e) => setAffectedPlantCount(e.target.value)}
+                    aria-invalid={touched && !!affectedPlantCountError}
+                  />
+                  {touched && affectedPlantCountError && (
+                    <p className="mt-1 text-sm text-status-critical">{affectedPlantCountError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="secondary" fullWidth onClick={() => inputRef.current?.click()}>
+                  {copy.scan.changePhoto}
+                </Button>
+                <Button fullWidth onClick={handleAnalyze} disabled={status === 'loading'}>
+                  {status === 'loading' ? copy.scan.analyzing : copy.scan.analyzeButton}
+                </Button>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </>
           )}
 
           {status === 'loading' && <Spinner label={copy.scan.analyzing} />}
@@ -156,7 +216,7 @@ export default function ScanPage() {
 
           {status === 'success' && result && (
             <div className="space-y-4">
-              <Card>
+              <Card tint>
                 <h2 className="text-2xl font-bold text-ink-primary">{result.diseaseName}</h2>
                 <p className="mb-3 text-base italic text-ink-secondary">{result.scientificName}</p>
                 <div className="mb-3">
@@ -176,7 +236,7 @@ export default function ScanPage() {
                 </Card>
               )}
 
-              <Card>
+              <Card tint>
                 <h3 className="mb-3 text-lg font-bold text-ink-primary">{copy.scan.recommendationsTitle}</h3>
                 <ul className="space-y-2">
                   {result.recommendations.map((rec, i) => (

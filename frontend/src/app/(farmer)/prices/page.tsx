@@ -123,7 +123,7 @@ export default function PricesPage() {
 
       {status === 'success' && data && (
         <div className="space-y-4">
-          <Card>
+          <Card tint>
             <p className="text-base text-ink-secondary">{copy.prices.currentPriceLabel}</p>
             <p className="text-3xl font-extrabold text-ink-primary">
               {formatVnd(data.currentPrice)} <span className="text-lg font-semibold text-ink-secondary">{data.unit}</span>
@@ -145,7 +145,7 @@ export default function PricesPage() {
           {chartData.length === 0 ? (
             <EmptyState tone="offline" title={copy.common.empty} />
           ) : (
-            <Card>
+            <Card tint>
               <div className="mb-2 flex items-center gap-4 text-sm">
                 <span className="flex items-center gap-1.5 text-ink-secondary">
                   <span className="h-0.5 w-4 bg-brand-600" /> {copy.prices.chartLegendHistory}

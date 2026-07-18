@@ -115,6 +115,22 @@ export interface DashboardResult {
   districtRankings: DistrictRanking[];
 }
 
+// ---------- 4b. Disease/pest report (báo cáo sâu bệnh) ----------
+
+export interface DiseaseReportEntry {
+  id: number;
+  district: string;
+  cropType: CropType;
+  diseaseName: string;
+  severity: Severity;
+  affectedPlantCount: number;
+  reportedAt: string; // ISO date
+}
+
+export interface DiseaseReportResult {
+  reports: DiseaseReportEntry[];
+}
+
 // ---------- 5. Crop recommendation ----------
 
 export interface CropRecommendationResult {

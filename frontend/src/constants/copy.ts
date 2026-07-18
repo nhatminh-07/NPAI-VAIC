@@ -1,7 +1,7 @@
 // Single source of truth for all Vietnamese user-facing copy.
 
 export const copy = {
-  appName: 'Nông Nghiệp Số Điện Biên',
+  appName: 'AgriPlatform',
 
   common: {
     loading: 'Đang tải...',
@@ -15,7 +15,7 @@ export const copy = {
   },
 
   rolePicker: {
-    title: 'Nông Nghiệp Số Điện Biên',
+    title: 'AgriPlatform',
     subtitle: 'Chọn vai trò của bạn để bắt đầu',
     farmer: 'Tôi là nông dân',
     farmerDesc: 'Chẩn đoán bệnh cây, dự báo năng suất, xem giá thị trường',
@@ -28,6 +28,7 @@ export const copy = {
     forecast: 'Dự báo',
     prices: 'Giá cả',
     dashboard: 'Tổng quan',
+    diseaseReport: 'Báo cáo sâu bệnh',
     switchRole: 'Đổi vai trò',
   },
 
@@ -35,6 +36,9 @@ export const copy = {
     title: 'Chẩn đoán bệnh cây trồng',
     uploadPrompt: 'Chạm để chụp hoặc chọn ảnh lá cây',
     uploadHint: 'Chụp cận cảnh vùng bị bệnh, đủ ánh sáng',
+    affectedPlantCountLabel: 'Số cây bị bệnh',
+    affectedPlantCountPlaceholder: 'Ví dụ: 5',
+    affectedPlantCountError: 'Vui lòng nhập số cây lớn hơn 0',
     changePhoto: 'Chọn ảnh khác',
     analyzeButton: 'Phân tích',
     analyzing: 'Đang phân tích ảnh...',
@@ -124,5 +128,18 @@ export const copy = {
       diseaseCases: 'Ca bệnh',
     },
     errorTitle: 'Không thể tải bảng điều khiển',
+  },
+
+  diseaseReport: {
+    title: 'Báo cáo sâu bệnh',
+    columns: {
+      district: 'Huyện',
+      crop: 'Cây trồng',
+      diseaseName: 'Loại bệnh',
+      severity: 'Mức độ',
+      affectedPlantCount: 'Số cây bị bệnh',
+      reportedAt: 'Ngày báo cáo',
+    },
+    errorTitle: 'Không thể tải báo cáo sâu bệnh',
   },
 } as const;
