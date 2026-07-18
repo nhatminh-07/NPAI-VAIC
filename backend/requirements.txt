@@ -9,10 +9,11 @@ pandas==2.2.2
 lightgbm==4.5.0
 statsmodels==0.14.2
 joblib==1.4.2
-scikit-learn==1.5.1
+scikit-learn==1.7.2
 python-dotenv==1.0.1
 dotenv==0.9.9
 psycopg2-binary==2.9.9
-transformers==4.44.2
-torch==2.4.0
-torchvision==0.19.0
+# Optional ML dependencies for full model support; leave disabled on Windows demo to avoid runtime import issues.
+# transformers==4.44.2
+# torch==2.4.0
+# torchvision==0.19.0

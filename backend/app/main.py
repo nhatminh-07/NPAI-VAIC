@@ -6,7 +6,7 @@ from app.config import CORS_ORIGINS, BASE_DIR, UPLOAD_DIR
 from app.database import Base, engine
 from app import models  # noqa: F401 - đảm bảo models được đăng ký trước create_all
 from app.routers import disease, yield_forecast, market_price
-from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard
+from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard, frontend_crop
 
 # Tạo bảng nếu chưa tồn tại (MVP dùng SQLite; khi lên Supabase có thể dùng Alembic)
 Base.metadata.create_all(bind=engine)
@@ -40,6 +40,7 @@ app.include_router(frontend_disease.router)
 app.include_router(frontend_yield.router)
 app.include_router(frontend_market.router)
 app.include_router(frontend_dashboard.router)
+app.include_router(frontend_crop.router)
 
 
 @app.get("/")

@@ -9,8 +9,8 @@ from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 
-from app.config import UPLOAD_DIR, DISEASE_RULES_JSON
-from app.services.disease_service import detect_disease
+from app.config import UPLOAD_DIR
+from app.services.disease_model import get_model
 
 router = APIRouter(prefix="/disease", tags=["Frontend - Disease Detection"])
 
@@ -46,11 +46,54 @@ def _get_severity(disease_key: str, confidence: float) -> str:
     return severity_map.get(disease_key, "moderate")
 
 
-def _parse_recommendations(recommendation: str) -> List[str]:
-    """Parse recommendation string into list of steps."""
-    # Split by common Vietnamese separators
-    steps = recommendation.replace(";", ",").split(",")
-    return [s.strip() for s in steps if s.strip()]
+def _parse_recommendations(disease_key: str) -> List[str]:
+    """Generate recommendations based on disease key."""
+    base = [
+        "Theo dõi tình trạng cây trồng thường xuyên.",
+        "Kiểm tra độ ẩm đất và điều chỉnh tưới tiêu.",
+        "Tham khảo ý kiến chuyên gia nông nghiệp địa phương.",
+    ]
+    if disease_key == "healthy":
+        return ["Cây trồng khỏe mạnh. Tiếp tục duy trì chăm sóc bình thường."]
+    specific = {
+        "rice_blast": [
+            "Cách ly cây bệnh để tránh lây lan.",
+            "Phun thuốc trừ nấm Validacin hoặc Fuji-One.",
+            "Giảm bón đạm, tăng bón kali.",
+            "Thau nước thường xuyên để hạ nhiệt độ.",
+        ],
+        "bacterial_leaf_blight": [
+            "Cách ly cây bệnh ngay lập tức.",
+            "Phun thuốc kháng khuẩn đồng (Copper-based).",
+            "Không tưới nước lên lá.",
+            "Bón phân cân đối, tránh bón thừa đạm.",
+        ],
+        "coffee_leaf_rust": [
+            "Tỉa cành thông thoáng, tăng ánh sáng.",
+            "Phun thuốc gốc đồng hoặc Daconil.",
+            "Thu gom lá rụng tiêu hủy.",
+            "Bón phân đầy đủ để tăng sức đề kháng.",
+        ],
+        "coffee_berry_borer": [
+            "Thu hoạch sớm quả chín.",
+            "Phun thuốc Decamethrin hoặc Cypermethrin.",
+            "Vệ sinh vườn sạch sẽ.",
+            "Sử dụng bẫy côn trùng.",
+        ],
+        "vegetable_downy_mildew": [
+            "Cách ly cây bệnh.",
+            "Phun thuốc Ridomil Gold hoặc Acrobat.",
+            "Tăng cường thoáng gió, giảm độ ẩm.",
+            "Tránh tưới nước lên lá.",
+        ],
+        "vegetable_aphids": [
+            "Phun nước áp lực cao để rửa trôi rệp.",
+            "Sử dụng thuốc trừ sâu sinh học hoặc Confidor.",
+            "Trồng cây có mùi hương xua đuổi rệp.",
+            "Thu hút thiên địch (bọ rùa, ong ký sinh).",
+        ],
+    }
+    return specific.get(disease_key, base[:])
 
 
 @router.post("/detect")
@@ -70,19 +113,27 @@ async def detect_disease_frontend(
     with open(save_path, "wb") as f:
         f.write(content)
 
-    # Call existing service
-    result = detect_disease(save_path, crop_name=cropType)
+    # Get model prediction
+    model = get_model()
+    disease_key, confidence = model.predict(save_path, crop_name=cropType)
 
-    # Map to frontend response format
-    disease_key = result["disease_label"].lower().replace(" ", "_").replace("(", "").replace(")", "")
-    if "khỏe" in disease_key or "healthy" in disease_key.lower():
-        disease_key = "healthy"
+    # Map disease key to Vietnamese label
+    label_names = {
+        "healthy": "Cây khỏe mạnh",
+        "rice_blast": "Đạo ôn lúa",
+        "bacterial_leaf_blight": "Bạc lá vi khuẩn",
+        "coffee_leaf_rust": "Gỉ sắt cà phê",
+        "coffee_berry_borer": "Sâu đục quả cà phê",
+        "vegetable_downy_mildew": "Sương mai rau màu",
+        "vegetable_aphids": "Rệp hại rau màu",
+    }
+    disease_name = label_names.get(disease_key, disease_key)
 
     return {
-        "diseaseName": result["disease_label"],
+        "diseaseName": disease_name,
         "scientificName": _get_scientific_name(disease_key),
-        "confidence": result["confidence"],
-        "severity": _get_severity(disease_key, result["confidence"]),
-        "recommendations": _parse_recommendations(result["recommendation"]),
+        "confidence": confidence,
+        "severity": _get_severity(disease_key, confidence),
+        "recommendations": _parse_recommendations(disease_key),
         "imageUrl": f"/static/uploaded_images/{filename}",
     }
