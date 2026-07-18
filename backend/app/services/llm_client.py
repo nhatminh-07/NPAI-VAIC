@@ -1,47 +1,46 @@
 """
-Client gọi LLM qua endpoint OpenAI-compatible của FPT AI Marketplace
-(https://marketplace.fptcloud.com). Dùng thẳng `requests` (đã có sẵn trong
-requirements.txt) thay vì thêm SDK `openai` làm dependency mới.
+Client gọi LLM qua OpenAI-compatible endpoint.
 
 Cấu hình qua biến môi trường (xem .env.example ở thư mục backend/):
-  FPT_API_KEY   - bắt buộc để bật tính năng LLM. Tạo tại
-                  marketplace.fptcloud.com/en/my-account#my-api-key
-  FPT_BASE_URL  - mặc định https://mkp-api.fptcloud.com/v1
-  FPT_MODEL     - mặc định gemma-4-31B-it
+  OPENAI_API_KEY  - bắt buộc để bật tính năng LLM
+  OPENAI_BASE_URL - mặc định https://api.openai.com/v1
+  OPENAI_MODEL    - mặc định gpt-4o-mini
 
-Nếu FPT_API_KEY rỗng, is_configured() trả về False - nơi gọi (assistant_service)
+Nếu OPENAI_API_KEY rỗng, is_configured() trả về False - nơi gọi (assistant_service)
 sẽ tự fallback sang câu trả lời rule-based, không có gì bị crash.
 """
+import os
 import requests
 
-from app.config import FPT_API_KEY, FPT_BASE_URL, FPT_MODEL
-
+_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+_API_KEY = os.getenv("OPENAI_API_KEY", "")
+_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 _TIMEOUT_SECONDS = 20
 
 
 def is_configured() -> bool:
-    return bool(FPT_API_KEY)
+    return bool(_API_KEY)
 
 
 def chat_completion(messages: list[dict], temperature: float = 0.3) -> str:
-    """Gọi POST {FPT_BASE_URL}/chat/completions, trả về nội dung text.
+    """Gọi POST {_BASE_URL}/chat/completions, trả về nội dung text.
 
     Raise (requests.RequestException, KeyError, ...) nếu có lỗi mạng, HTTP,
     hoặc response không đúng định dạng mong đợi - bên gọi chịu trách nhiệm
     bắt lỗi và fallback nếu cần, để một lỗi tạm thời của LLM provider không
     làm sập cả endpoint /assistant/chat.
     """
-    if not FPT_API_KEY:
-        raise RuntimeError("FPT_API_KEY chưa được cấu hình (xem .env.example).")
+    if not _API_KEY:
+        raise RuntimeError("OPENAI_API_KEY chưa được cấu hình (xem .env.example).")
 
     resp = requests.post(
-        f"{FPT_BASE_URL.rstrip('/')}/chat/completions",
+        f"{_BASE_URL.rstrip('/')}/chat/completions",
         headers={
-            "Authorization": f"Bearer {FPT_API_KEY}",
+            "Authorization": f"Bearer {_API_KEY}",
             "Content-Type": "application/json",
         },
         json={
-            "model": FPT_MODEL,
+            "model": _MODEL,
             "messages": messages,
             "temperature": temperature,
         },

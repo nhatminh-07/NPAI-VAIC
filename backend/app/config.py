@@ -29,7 +29,7 @@ DISEASE_RULES_JSON = os.path.join(DATA_DIR, "disease_recommendations.json")
 
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
-# --- FPT AI (optional - chatbot assistant) ---
-FPT_API_KEY = os.getenv("FPT_API_KEY", "")
-FPT_BASE_URL = os.getenv("FPT_BASE_URL", "https://mkp-api.fptcloud.com/v1")
-FPT_MODEL = os.getenv("FPT_MODEL", "gemma-4-31B-it")
+# --- OpenAI (optional - chatbot assistant) ---
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")

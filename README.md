@@ -121,9 +121,11 @@ Dữ liệu mẫu (`seed_data.py`) được thiết kế riêng cho demo:
 ### Backend
 - **FastAPI** - API framework (Swagger docs tự sinh tại `/docs`)
 - **SQLAlchemy** - ORM (SQLite cho local/demo, hỗ trợ PostgreSQL cho production)
+- **PyTorch + HuggingFace Transformers** - Chẩn đoán bệnh cây trồng qua ảnh (MobileNetV2, 38 lớp bệnh, độ chính xác 95.41%)
 - **LightGBM / scikit-learn** - Dự báo năng suất
 - **Statsmodels (Holt-Winters)** - Dự báo giá thị trường
 - **Open-Meteo API** - Dữ liệu thời tiết thực tế cho dự báo năng suất
+- **OpenAI GPT-4o-mini** - Trợ lý AI chatbot (tổng hợp dữ liệu thành câu trả lời tự nhiên tiếng Việt)
 - **Pillow / NumPy / Pandas** - Xử lý ảnh và dữ liệu
 
 ### Frontend
@@ -262,6 +264,9 @@ Danh sách các endpoint đang được đăng ký (xác thực từ `/openapi.j
 ```env
 DATABASE_URL=postgresql://postgres:<password>@<host>:5432/postgres
 CORS_ORIGINS=http://localhost:3000,https://agriplatform-neon.vercel.app
+OPENAI_API_KEY=sk-proj-...          # OpenAI API key cho chatbot GPT-4o-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 ### Frontend (.env.local)

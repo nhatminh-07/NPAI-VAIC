@@ -173,7 +173,7 @@ export default function PricesPage() {
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
                     <CartesianGrid stroke="#e1e0d9" vertical={false} />
                     <XAxis
                       dataKey="date"

@@ -307,23 +307,31 @@ def run():
         region_crops[region.id] = crops_here or ["rice"]
     db.commit()
 
-            q_mid_month = (q_num - 1) * 3 + random.randint(1, 3)
-            q_day = random.randint(5, 25)
-            d_created_at = datetime(q_year, q_mid_month, q_day, random.randint(8, 17), random.randint(0, 59))
-
-            detection = DiseaseDetection(
-                farm_id=farm.id,
+    # --- Báo cáo sâu bệnh: ~60% số vùng mỗi quý có bệnh ---
+    print("[*] Tao bao cao sau benh (gan vung canh tac)...")
+    DISEASES_BY_CROP = {
+        "rice": [("Bacterial Leaf Blight", "Xanthomonas oryzae"), ("Brown Spot", "Bipolaris oryzae"), ("Leaf Smut", "Entyloma oryzae")],
+        "coffee": [("Coffee Leaf Rust", "Hemileia vastatrix"), ("Coffee Berry Disease", "Colletotrichum gloeosporioides"), ("Root-knot Nematode", "Meloidogyne spp.")],
+        "vegetable": [("Late Blight", "Phytophthora infestans"), ("Powdery Mildew", "Erysiphe cichoracearum"), ("Aphid", "Aphis gossypii")],
+    }
+    for idx, (region, q_off) in enumerate(regions):
+        if idx % 5 >= 3:  # ~60% deterministic
+            continue
+        for _ in range(random.randint(2, 6)):
+            crop_type = random.choice(region_crops[region.id])
+            disease_name, sci_name = random.choice(DISEASES_BY_CROP[crop_type])
+            created = quarter_day(q_off)
+            db.add(DiseaseDetection(
+                farm_id=None,
+                district=region.district,
+                crop_type=crop_type,
                 image_url=f"/static/uploaded_images/disease_{random.randint(1,100)}.jpg",
                 disease_label=disease_name,
                 scientific_name=sci_name,
                 confidence=round(random.uniform(0.6, 0.95), 2),
-                recommendation=reason,
-                crop_type=crop_type,
-                district=farm.location,
-                created_at=d_created_at,
-            )
-            db.add(detection)
-
+                recommendation=f"Cach ly cay benh, phun thuoc phu hop, theo doi do am dat.",
+                created_at=datetime.combine(created, datetime.min.time()),
+            ))
     db.commit()
 
     # Thống kê

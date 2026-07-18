@@ -188,14 +188,18 @@ def build_reply(db: Session, message: str, history: list[dict]) -> str:
 
     Bước 1 (luôn chạy, rule-based): truy vấn DB thật để lấy các "sự kiện" -
     đây là nguồn sự thật, tránh LLM bịa số liệu.
-    Bước 2 (tuỳ chọn, nếu đã cấu hình FPT_API_KEY): đưa dữ liệu ở bước 1 cho
-    LLM (FPT AI Marketplace) diễn đạt lại thành câu trả lời tự nhiên hơn,
+    Bước 2 (tuỳ chọn, nếu đã cấu hình OPENAI_API_KEY): đưa dữ liệu ở bước 1 cho
+    LLM (GPT-4o-mini) diễn đạt lại thành câu trả lời tự nhiên hơn,
     có xét ngữ cảnh hội thoại (history). Nếu bước này lỗi (mạng, timeout,
     quota...), lặng lẽ fallback về kết quả rule-based của bước 1.
     """
     # Kiểm tra câu hỏi về khả năng của chatbot
     msg_lower = message.lower()
-    if any(phrase in msg_lower for phrase in ["bạn có thể làm gì", "bạn làm được gì", "chức năng", "khả năng", "bạn có thể giúp gì"]):
+    # Greeting
+    if any(g in msg_lower for g in ["xin chào", "chào bạn", "chào", "hi", "hello", "hey"]):
+        return "Xin chào! Tôi là trợ lý AI Nông Nghiệp Điện Biên. Tôi có thể giúp bạn tra cứu thông tin về sâu bệnh, năng suất cây trồng và giá thị trường nông sản. Bạn cần hỗ trợ gì?"
+    # Capabilities
+    if any(p in msg_lower for p in ["bạn có thể làm gì", "bạn làm được gì", "chức năng", "khả năng", "bạn có thể giúp gì"]):
         return _CAPABILITIES_ANSWER
 
     context_text = _resolve_context(message, history)
