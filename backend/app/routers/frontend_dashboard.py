@@ -120,16 +120,22 @@ async def get_dashboard_frontend(
             q = q.filter(DiseaseDetection.crop_type == crop_name)
         return int(q.scalar() or 0)
 
-    cur_area = get_total_area(current_start, current_end)
-    prev_area = get_total_area(prev_start, prev_end)
+    # Tổng diện tích KHÔNG lọc theo kỳ - diện tích canh tác là cộng dồn (cán bộ
+    # cần thấy tổng diện tích canh tác hiện tại của tỉnh, không phải diện tích
+    # canh tác TRONG kỳ). Chỉ filter theo crop nếu có chọn.
+    cur_area = get_total_area(None, None)
+    prev_area = cur_area  # diện tích cộng dồn không đổi theo kỳ
+
     cur_yield = get_avg_yield(current_start, current_end)
     prev_yield = get_avg_yield(prev_start, prev_end)
     cur_disease = get_disease_count(current_start, current_end)
     prev_disease = get_disease_count(prev_start, prev_end)
 
     total_farms = max(db.query(func.count(Farm.id)).scalar() or 1, 1)
-    cur_rate = cur_disease / total_farms * 100
-    prev_rate = prev_disease / total_farms * 100
+    # Tỷ lệ sâu bệnh = (số ca bệnh trong kỳ) / (tổng farm) * 100
+    # Cap 100% để tránh >100% khi 1 farm có nhiều ca (ví dụ: 36 ca / 16 farm = 225%)
+    cur_rate = min(cur_disease / total_farms * 100, 100.0)
+    prev_rate = min(prev_disease / total_farms * 100, 100.0)
 
     kpis = [
         {

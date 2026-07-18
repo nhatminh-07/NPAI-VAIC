@@ -1,131 +1,123 @@
 """
 Module phân tích/dự báo giá thị trường.
-Dùng dataset gia_thi_truong_2026.csv
 
-Dùng Holt-Winters Exponential Smoothing (statsmodels) cho dự báo.
+Luồng dữ liệu:
+1. Ưu tiên đọc từ bảng MarketPrice trong DB (đã seed bằng seed_market_prices.py)
+2. Fallback sang gia_thi_truong_2026.csv nếu DB trống
+
+Dự báo: Holt-Winters Exponential Smoothing (statsmodels).
 """
 
 import pandas as pd
-from datetime import datetime
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 from app.config import BASE_DIR
 
-# Đường dẫn dataset
 PRICE_DATA_PATH = f"{BASE_DIR}/app/data/gia_thi_truong_2026.csv"
-
-# Cache
 _history_cache = {}
 
 
-def _load_price_data() -> pd.DataFrame:
-    """Load và parse dataset giá thị trường."""
+def _load_from_db(crop_name: str) -> pd.DataFrame | None:
+    """Đọc lịch sử giá từ bảng MarketPrice trong DB. Trả về None nếu DB trống."""
+    try:
+        from app.database import SessionLocal
+        from app.models import MarketPrice, Crop
+
+        db = SessionLocal()
+        try:
+            crop = db.query(Crop).filter(Crop.name == crop_name).first()
+            if not crop:
+                return None
+
+            rows = (
+                db.query(MarketPrice)
+                .filter(MarketPrice.crop_id == crop.id)
+                .order_by(MarketPrice.date.asc())
+                .all()
+            )
+
+            if not rows:
+                return None
+
+            return pd.DataFrame([
+                {"date": r.date, "price": r.price}
+                for r in rows
+            ])
+        finally:
+            db.close()
+    except Exception:
+        return None
+
+
+def _load_from_csv(crop_name: str) -> pd.DataFrame:
+    """
+    Load và parse dataset CSV (gia_thi_truong_2026.csv).
+    Dataset wide format: mỗi cột là 1 loại cây.
+    """
     df = pd.read_csv(PRICE_DATA_PATH)
+    df["date"] = pd.to_datetime(df["date"], format="%m/%d/%Y", errors="coerce")
 
-    # Rename columns
-    df = df.rename(columns={
-        "Ngay": "date",
-        "Nhom_hang": "category",
-        "Mat_hang": "product",
-        "Gia_thap": "price_low",
-        "Gia_cao": "price_high",
-        "Don_vi": "unit",
-    })
+    crop_col_map = {
+        "bac_thom_7_price_vnd_kg": "rice",
+        "coffee_price_vnd_kg": "coffee",
+        "tomato_price_vnd_kg": "vegetable",
+    }
 
-    # Parse date
-    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d", errors="coerce")
+    rows = []
+    for col, crop_type in crop_col_map.items():
+        if col in df.columns:
+            temp = df[["date", col]].copy()
+            temp.columns = ["date", "price"]
+            temp["crop_type"] = crop_type
+            rows.append(temp)
 
-    # Calculate average price
-    df["price"] = df[["price_low", "price_high"]].mean(axis=1)
-
-    # Map category to crop type
-    def map_crop_type(row):
-        cat = str(row.get("category", "")).lower()
-        prod = str(row.get("product", "")).lower()
-
-        if "gạo" in cat or "gao" in prod:
-            return "rice"
-        elif "lúa" in cat or "lua" in prod:
-            return "rice"
-        elif "cà phê" in cat or "ca phe" in prod:
-            return "coffee"
-        elif "rau" in cat or "rau" in prod:
-            return "vegetable"
-        else:
-            return None
-
-    df["crop_type"] = df.apply(map_crop_type, axis=1)
-
-    # Filter valid rows
-    df = df[df["crop_type"].notna() & df["price"].notna()]
-
-    return df[["date", "crop_type", "product", "price", "unit"]].sort_values("date")
+    result = pd.concat(rows, ignore_index=True)
+    result = result.dropna(subset=["date", "price"])
+    return result[result["crop_type"] == crop_name][["date", "price"]].sort_values("date").reset_index(drop=True)
 
 
 def _load_history(crop_name: str) -> pd.DataFrame:
-    """Load lịch sử giá cho crop."""
+    """Load lịch sử giá: ưu tiên DB, fallback CSV."""
     global _history_cache
 
     if crop_name in _history_cache:
         return _history_cache[crop_name]
 
-    df = _load_price_data()
-    subset = df[df["crop_type"] == crop_name][["date", "price"]].copy()
-    subset = subset.sort_values("date").reset_index(drop=True)
+    # 1. Thử đọc từ DB
+    df_db = _load_from_db(crop_name)
 
-    # Fallback: nếu dataset không có dữ liệu cho crop này (VD: coffee),
-    # sinh chuỗi tham khảo dựa trên giá thị trường Điện Biên để forecast vẫn hoạt động.
-    if subset.empty:
-        subset = _generate_reference_history(crop_name)
+    # 2. Fallback CSV
+    if df_db is None or df_db.empty:
+        print(f"[PriceService] DB trống cho '{crop_name}', fallback sang CSV")
+        subset = _load_from_csv(crop_name)
+    else:
+        subset = df_db.copy().reset_index(drop=True)
 
     _history_cache[crop_name] = subset
     return subset
 
 
-def _generate_reference_history(crop_name: str) -> pd.DataFrame:
-    """Sinh chuỗi giá tham khảo khi dataset không có dữ liệu cho crop."""
-    # Giá tham khảo cà phê Điện Biên (VND/kg) — giá robusta nhân xô tại vườn
-    reference_prices = {
-        "coffee": 70000,
-        "rice": 6500,
-        "vegetable": 15000,
-    }
-    base_price = reference_prices.get(crop_name, 10000)
-    end_date = pd.Timestamp.today().normalize() - pd.Timedelta(days=1)
-
-    dates = pd.date_range(end=end_date, periods=30, freq="D")
-    prices = [
-        round(base_price + (i % 7 - 3) * base_price * 0.01, 0)
-        for i in range(30)
-    ]
-    return pd.DataFrame({"date": dates, "price": prices})
-
-
 def _fit_and_forecast(history: pd.DataFrame, periods: int) -> list:
     """Dự báo giá bằng Holt-Winters với tham số phù hợp cho dữ liệu thưa."""
     if len(history) < 5:
-        # Not enough data, return flat forecast
         last_price = history["price"].iloc[-1] if len(history) > 0 else 5000
         return [last_price] * periods
 
     series = history.set_index("date")["price"]
     series.index = pd.DatetimeIndex(series.index).to_period("D").to_timestamp()
 
-    # Dữ liệu rất thưa (~12-24 điểm) nên không đủ để ước tính seasonal component.
-    # Dùng damped trend thay vì Holt-Winters có seasonal để tránh overfitting.
     try:
         model = ExponentialSmoothing(
             series,
             trend="add",
-            damped_trend=True,  # damped: forecast sẽ flatten dần, không extrapolate trend quá mức
-            seasonal=None,      # tắt seasonal vì dữ liệu không đủ
+            damped_trend=True,
+            seasonal=None,
             initialization_method="estimated",
         )
         fitted = model.fit(optimized=True)
         forecast = fitted.forecast(periods)
         return [max(float(v), 0.0) for v in forecast.values]
     except Exception:
-        # Fallback: flat forecast
         last_price = float(history["price"].iloc[-1])
         return [last_price] * periods
 
@@ -141,23 +133,32 @@ def get_market_price(crop_name: str, forecast_days: int = 14) -> dict:
     Returns:
         dict với current_price, trend, history, forecast
     """
-    # Map frontend crop type to dataset
-    crop_map = {"rice": "rice", "coffee": "coffee", "vegetable": "vegetable"}
-    crop_key = crop_map.get(crop_name, "rice")
-
-    history = _load_history(crop_key)
+    history = _load_history(crop_name)
     if history.empty:
         raise ValueError(f"Không có dữ liệu giá cho '{crop_name}'")
 
     current_price = float(history["price"].iloc[-1])
+    last_date = pd.Timestamp(history["date"].iloc[-1])
 
-    # Calculate trend
-    recent = history["price"].tail(7)
-    older = history["price"].tail(14).head(7)
+    # Tìm giá cách đây ~7 ngày bằng ngày thực tế
+    target_date = last_date - pd.Timedelta(days=7)
+    window_start = target_date - pd.Timedelta(days=3)
 
-    if len(recent) >= 3 and len(older) >= 3:
-        recent_avg = recent.mean()
-        older_avg = older.mean()
+    older_mask = (history["date"] >= window_start) & (history["date"] < last_date)
+    recent_mask = history["date"] >= last_date - pd.Timedelta(days=3)
+
+    recent_window = history.loc[recent_mask, "price"]
+    older_window = history.loc[older_mask, "price"]
+
+    if not older_window.empty:
+        oldest_in_window = history.loc[older_mask, "date"].min()
+        change_days = int((last_date - oldest_in_window).days)
+    else:
+        change_days = 7
+
+    if len(recent_window) >= 1 and len(older_window) >= 1:
+        recent_avg = recent_window.mean()
+        older_avg = older_window.mean()
 
         if recent_avg > older_avg * 1.02:
             trend = "increasing"
@@ -165,13 +166,13 @@ def get_market_price(crop_name: str, forecast_days: int = 14) -> dict:
             trend = "decreasing"
         else:
             trend = "stable"
+        change_pct = ((recent_avg - older_avg) / older_avg * 100) if older_avg else 0.0
     else:
         trend = "stable"
+        change_pct = 0.0
 
-    # Forecast
     forecast_values = _fit_and_forecast(history, forecast_days)
 
-    last_date = history["date"].iloc[-1]
     forecast_points = [
         {
             "date": (last_date + pd.Timedelta(days=i + 1)).strftime("%Y-%m-%d"),
@@ -181,15 +182,11 @@ def get_market_price(crop_name: str, forecast_days: int = 14) -> dict:
     ]
 
     history_points = [
-        {
-            "date": row["date"].strftime("%Y-%m-%d"),
-            "price": round(row["price"], 0)
-        }
+        {"date": row["date"].strftime("%Y-%m-%d"), "price": round(row["price"], 0)}
         for _, row in history.tail(60).iterrows()
     ]
 
-    # Map crop name for display
-    crop_display = {"rice": "Gạo/Lúa", "coffee": "Cà phê", "vegetable": "Rau màu"}
+    crop_display = {"rice": "Lúa Bắc Thơm 7", "coffee": "Cà phê", "vegetable": "Cà chua"}
 
     return {
         "crop_name": crop_display.get(crop_name, crop_name),
@@ -198,11 +195,13 @@ def get_market_price(crop_name: str, forecast_days: int = 14) -> dict:
         "history": history_points,
         "forecast": forecast_points,
         "unit": "đ/kg",
+        "change_pct": round(change_pct, 1),
+        "change_days": change_days,
     }
 
 
 def get_available_crops() -> list:
     """Lấy danh sách các loại cây có trong dataset."""
-    df = _load_price_data()
-    crops = df["crop_type"].unique().tolist()
-    return [{"id": i+1, "name": c, "name_vi": c.capitalize()} for i, c in enumerate(crops)]
+    df = _load_from_csv("rice")
+    crops = df["crop_type"].unique().tolist() if not df.empty else ["rice", "coffee", "vegetable"]
+    return [{"id": i + 1, "name": c, "name_vi": c.capitalize()} for i, c in enumerate(crops)]

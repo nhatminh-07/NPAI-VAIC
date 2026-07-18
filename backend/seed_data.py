@@ -6,7 +6,7 @@ Chạy: python seed_data.py
 """
 import random
 import sys
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 # Fix Unicode on Windows
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -204,6 +204,12 @@ def run():
             base = base_yields.get(farm.crop.name, 5.0)
             predicted_yield = round(base * weather_factor * farm.area * random.uniform(0.9, 1.1), 2)
 
+            # Spread created_at thực sự vào từng quý (tháng giữa quý, ngày random)
+            # Để dashboard filter theo created_at sẽ ra dữ liệu cho từng kỳ
+            q_mid_month = (q_num - 1) * 3 + random.randint(1, 3)
+            q_created_day = random.randint(5, 25)
+            yield_created_at = datetime(q_year, q_mid_month, q_created_day, random.randint(8, 17), random.randint(0, 59))
+
             harvest_date = date(q_year, (q_num - 1) * 3 + random.randint(1, 3), random.randint(1, 28))
             season = f"{q_year}-Q{q_num}"
 
@@ -212,6 +218,7 @@ def run():
                 season=season,
                 predicted_yield=predicted_yield,
                 harvest_date=harvest_date,
+                created_at=yield_created_at,
             )
             db.add(yield_pred)
 
@@ -242,6 +249,10 @@ def run():
             reasons = WEATHER_REASONS.get(q_weather, WEATHER_REASONS["humid"])
             reason = random.choice(reasons)
 
+            q_mid_month = (q_num - 1) * 3 + random.randint(1, 3)
+            q_day = random.randint(5, 25)
+            d_created_at = datetime(q_year, q_mid_month, q_day, random.randint(8, 17), random.randint(0, 59))
+
             detection = DiseaseDetection(
                 farm_id=farm.id,
                 image_url=f"/static/uploaded_images/disease_{random.randint(1,100)}.jpg",
@@ -250,7 +261,7 @@ def run():
                 recommendation=reason,
                 crop_type=crop_type,
                 district=farm.location,
-                created_at=date(q_year, (q_num - 1) * 3 + random.randint(1, 3), random.randint(1, 28)),
+                created_at=d_created_at,
             )
             db.add(detection)
 

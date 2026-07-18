@@ -149,7 +149,7 @@ export default function PricesPage() {
                 <svg viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 ${isUp ? '' : 'rotate-180'}`}>
                   <path d="M10 3l6 8h-4v6H8v-6H4l6-8z" />
                 </svg>
-                {Math.abs(data.change7dPercent)}% ({copy.prices.change7dLabel})
+                {Math.abs(data.change7dPercent)}% (thay đổi {data.changeDays} ngày)
               </span>
             </div>
             <p className="mt-2 text-base font-medium text-ink-primary">{data.trendLabel}</p>

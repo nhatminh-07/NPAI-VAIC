@@ -6,11 +6,12 @@ from app.config import CORS_ORIGINS, BASE_DIR, UPLOAD_DIR
 from app.database import Base, engine
 from app import models  # noqa: F401 - đảm bảo models được đăng ký trước create_all
 from app.routers import disease, yield_forecast, market_price
-from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard
+from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard, frontend_crop
 from app.routers import assistant
 
 # Import seed_data module để có thể gọi
 import seed_data
+import seed_market_prices
 
 # Tạo bảng nếu chưa tồn tại (MVP dùng SQLite; khi lên Supabase có thể dùng Alembic)
 Base.metadata.create_all(bind=engine)
@@ -45,6 +46,7 @@ app.include_router(frontend_disease.report_router)
 app.include_router(frontend_yield.router)
 app.include_router(frontend_market.router)
 app.include_router(frontend_dashboard.router)
+app.include_router(frontend_crop.router)
 
 # AI Assistant (chatbot)
 app.include_router(assistant.router)
@@ -61,5 +63,16 @@ def trigger_seed():
     try:
         seed_data.run()
         return {"status": "ok", "message": "Seed data completed"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/admin/seed-prices")
+def trigger_seed_prices():
+    """Seed giá thị trường thực tế vào bảng MarketPrice trong DB."""
+    try:
+        import seed_market_prices as smp
+        smp.run()
+        return {"status": "ok", "message": "Market prices seeded into DB"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
