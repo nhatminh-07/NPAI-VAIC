@@ -169,7 +169,6 @@ Mở: **http://localhost:3000**
 4. Output Directory: `.next`
 
 ## Môi trường
-
 ### Backend (.env)
 ```env
 DATABASE_URL=postgresql://postgres:<password>@<host>:5432/postgres
