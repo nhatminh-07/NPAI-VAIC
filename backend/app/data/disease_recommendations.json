@@ -5,26 +5,26 @@
   },
   "rice_blast": {
     "label_vi": "Đạo ôn lúa (Rice Blast)",
-    "recommendation": "Phun thuốc gốc Tricyclazole hoặc Isoprothiolane theo liều khuyến cáo; giảm bón đạm, tăng kali; tháo bớt nước ruộng để giảm ẩm độ tán lá."
+    "recommendation": "Phun thuốc gốc Tricyclazole hoặc Isoprothiolane theo liều khuyến cáo; Giảm bón đạm; Tăng bón kali; tháo bớt nước ruộng để giảm ẩm độ tán lá."
   },
   "bacterial_leaf_blight": {
     "label_vi": "Bạc lá vi khuẩn (Bacterial Leaf Blight)",
-    "recommendation": "Không phun thuốc gốc đồng khi trời mưa; dùng giống kháng bệnh vụ sau; bón cân đối NPK, tránh bón thừa đạm; vệ sinh đồng ruộng sau thu hoạch."
+    "recommendation": "Không phun thuốc gốc đồng khi trời mưa; Dùng giống kháng bệnh vụ sau; Bón cân đối NPK, tránh bón thừa đạm; Vệ sinh đồng ruộng sau thu hoạch."
   },
   "coffee_leaf_rust": {
     "label_vi": "Gỉ sắt cà phê (Coffee Leaf Rust)",
-    "recommendation": "Cắt tỉa cành bệnh và tiêu hủy; phun thuốc gốc đồng (Copper Hydroxide) hoặc Hexaconazole; đảm bảo mật độ trồng thông thoáng, bón phân cân đối."
+    "recommendation": "Cắt tỉa cành bệnh và tiêu hủy; Phun thuốc gốc đồng (Copper Hydroxide) hoặc Hexaconazole; Đảm bảo mật độ trồng thông thoáng, bón phân cân đối."
   },
   "coffee_berry_borer": {
     "label_vi": "Sâu đục quả cà phê (Coffee Berry Borer)",
-    "recommendation": "Thu hoạch triệt để quả rụng, quả sót trên cây; đặt bẫy pheromone; phun chế phẩm sinh học Beauveria bassiana nếu mật độ cao."
+    "recommendation": "Thu hoạch triệt để quả rụng, quả sót trên cây; Đặt bẫy pheromone; Phun chế phẩm sinh học Beauveria bassiana nếu mật độ cao."
   },
   "vegetable_downy_mildew": {
     "label_vi": "Sương mai rau màu (Downy Mildew)",
-    "recommendation": "Luân canh cây trồng khác họ; tăng khoảng cách trồng để thông thoáng; phun thuốc gốc Mancozeb hoặc Metalaxyl khi phát hiện sớm."
+    "recommendation": "Luân canh cây trồng khác họ; Tăng khoảng cách trồng để thông thoáng; Phun thuốc gốc Mancozeb hoặc Metalaxyl khi phát hiện sớm."
   },
   "vegetable_aphids": {
     "label_vi": "Rệp hại rau màu (Aphids)",
-    "recommendation": "Sử dụng bẫy dính vàng; phun nước xà phòng loãng hoặc dầu neem cho mật độ thấp; dùng thuốc trừ rệp sinh học nếu bùng phát mạnh."
+    "recommendation": "Sử dụng bẫy dính vàng; Phun nước xà phòng loãng hoặc dầu neem cho mật độ thấp; Dùng thuốc trừ rệp sinh học nếu bùng phát mạnh."
   }
 }
