@@ -54,7 +54,7 @@ DISTRICT_COORDS = {
     "Huyện Điện Biên Đông": (21.3667, 102.8167),
     "Huyện Mường Ảng": (21.5833, 103.1500),
     "Huyện Nậm Pồ": (21.8333, 102.7333),
-    # Tên viết tắt (theo frontend/src/constants/districts.ts, dùng bởi hệ thống vùng canh tác)
+    # Tên viết tắt (theo frontend/src/constants/districts.ts)
     "Điện Biên": (21.3865, 103.0231),
     "Điện Biên Đông": (21.3667, 102.8167),
     "Mường Ảng": (21.5833, 103.1500),

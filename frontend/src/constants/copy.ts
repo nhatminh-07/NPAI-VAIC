@@ -102,7 +102,7 @@ export const copy = {
   prices: {
     title: 'Giá thị trường',
     currentPriceLabel: 'Giá hiện tại',
-    change7dLabel: 'Thay đổi 7 ngày',
+    change7dLabel: 'Thay đổi {n} ngày',
     historyLabel: 'Lịch sử giá',
     forecastLabel: 'Dự báo',
     confidenceBandLabel: 'Khoảng dự báo',

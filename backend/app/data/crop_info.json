@@ -1,0 +1,231 @@
+{
+  "crops": [
+    {
+      "id": 1,
+      "name": "rice",
+      "name_vi": "Lúa",
+      "varieties": [
+        {
+          "name": "Bắc Thơm số 7",
+          "seasons": [
+            {
+              "season": "xuân",
+              "sow_month_start": 1,
+              "sow_month_end": 2,
+              "harvest_month_start": 5,
+              "harvest_month_end": 6,
+              "growth_days_min": 125,
+              "growth_days_max": 140,
+              "yield_ton_ha_min": 5.0,
+              "yield_ton_ha_max": 6.5
+            },
+            {
+              "season": "mùa",
+              "sow_month_start": 6,
+              "sow_month_end": 6,
+              "harvest_month_start": 9,
+              "harvest_month_end": 10,
+              "growth_days_min": 100,
+              "growth_days_max": 120,
+              "yield_ton_ha_min": 5.0,
+              "yield_ton_ha_max": 6.5
+            }
+          ],
+          "ideal_weather": {
+            "temp_c_min": 20,
+            "temp_c_max": 30,
+            "humidity_pct_min": 70,
+            "humidity_pct_max": 90,
+            "rainfall_mm_min": 1200,
+            "rainfall_mm_max": 1800,
+            "soil_ph_min": 5.5,
+            "soil_ph_max": 7.5
+          }
+        },
+        {
+          "name": "Séng Cù",
+          "seasons": [
+            {
+              "season": "chiêm_xuân",
+              "sow_month_start": 12,
+              "sow_month_end": 1,
+              "harvest_month_start": 5,
+              "harvest_month_end": 6,
+              "growth_days_min": 125,
+              "growth_days_max": 135,
+              "yield_ton_ha_min": 5.0,
+              "yield_ton_ha_max": 5.0,
+              "altitude_m_min": 500,
+              "altitude_m_max": 1400,
+              "ideal_weather": {
+                "temp_c_min": 16,
+                "temp_c_max": 33,
+                "humidity_pct_min": 70,
+                "humidity_pct_max": 90,
+                "rainfall_mm_min": 1200,
+                "rainfall_mm_max": 1800,
+                "soil_ph_min": 5.5,
+                "soil_ph_max": 7.5
+              }
+            },
+            {
+              "season": "mùa",
+              "sow_month_start": 6,
+              "sow_month_end": 7,
+              "harvest_month_start": 10,
+              "harvest_month_end": 11,
+              "growth_days_min": 105,
+              "growth_days_max": 115,
+              "yield_ton_ha_min": 3.5,
+              "yield_ton_ha_max": 4.0,
+              "altitude_m_min": 500,
+              "altitude_m_max": 1400,
+              "ideal_weather": {
+                "temp_c_min": 16,
+                "temp_c_max": 33,
+                "humidity_pct_min": 70,
+                "humidity_pct_max": 90,
+                "rainfall_mm_min": 1200,
+                "rainfall_mm_max": 1800,
+                "soil_ph_min": 5.5,
+                "soil_ph_max": 7.5
+              }
+            }
+          ]
+        },
+        {
+          "name": "IR64",
+          "seasons": [
+            {
+              "season": "đông_xuân",
+              "sow_month_start": 1,
+              "sow_month_end": 2,
+              "harvest_month_start": 5,
+              "harvest_month_end": 6,
+              "growth_days_min": 95,
+              "growth_days_max": 115,
+              "yield_ton_ha_min": 5.7,
+              "yield_ton_ha_max": 8.0,
+              "ideal_weather": {
+                "temp_c_min": 20,
+                "temp_c_max": 30,
+                "humidity_pct_min": 70,
+                "humidity_pct_max": 90,
+                "rainfall_mm_min": 1200,
+                "rainfall_mm_max": 1800,
+                "soil_ph_min": 5.5,
+                "soil_ph_max": 7.5
+              }
+            },
+            {
+              "season": "hè_thu",
+              "sow_month_start": 5,
+              "sow_month_end": 6,
+              "harvest_month_start": 8,
+              "harvest_month_end": 9,
+              "growth_days_min": 95,
+              "growth_days_max": 115,
+              "yield_ton_ha_min": 5.7,
+              "yield_ton_ha_max": 8.0,
+              "ideal_weather": {
+                "temp_c_min": 20,
+                "temp_c_max": 30,
+                "humidity_pct_min": 70,
+                "humidity_pct_max": 90,
+                "rainfall_mm_min": 1200,
+                "rainfall_mm_max": 1800,
+                "soil_ph_min": 5.5,
+                "soil_ph_max": 7.5
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "coffee",
+      "name_vi": "Cà phê",
+      "varieties": [
+        {
+          "name": "Cà phê",
+          "seasons": [
+            {
+              "season": "quanh_năm",
+              "sow_month_start": 4,
+              "sow_month_end": 6,
+              "harvest_month_start": 9,
+              "harvest_month_end": 3,
+              "growth_days_min": 720,
+              "growth_days_max": 1440,
+              "yield_ton_ha_min": 2.5,
+              "yield_ton_ha_max": 3.5,
+              "altitude_m_min": 700,
+              "altitude_m_max": 1700,
+              "ideal_weather": {
+                "temp_c_min": 18,
+                "temp_c_max": 25,
+                "humidity_pct_min": 60,
+                "humidity_pct_max": 70,
+                "soil_ph_min": 5.0,
+                "soil_ph_max": 6.5
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "vegetable",
+      "name_vi": "Rau màu",
+      "varieties": [
+        {
+          "name": "Cà chua",
+          "seasons": [
+            {
+              "season": "đông_xuân",
+              "sow_month_start": 10,
+              "sow_month_end": 11,
+              "harvest_month_start": 1,
+              "harvest_month_end": 2,
+              "growth_days_min": 90,
+              "growth_days_max": 120,
+              "yield_ton_ha_min": 65,
+              "yield_ton_ha_max": 70,
+              "ideal_weather": {
+                "temp_c_min": 18,
+                "temp_c_max": 29,
+                "humidity_pct_min": 60,
+                "humidity_pct_max": 70,
+                "soil_ph_min": 6.0,
+                "soil_ph_max": 7.0
+              }
+            },
+            {
+              "season": "vụ_trại",
+              "sow_month_start": 8,
+              "sow_month_end": 9,
+              "harvest_month_start": 12,
+              "harvest_month_end": 3,
+              "growth_days_min": 90,
+              "growth_days_max": 180,
+              "yield_ton_ha_min": 70,
+              "yield_ton_ha_max": 80,
+              "ideal_weather": {
+                "temp_c_min": 18,
+                "temp_c_max": 29,
+                "humidity_pct_min": 60,
+                "humidity_pct_max": 70,
+                "soil_ph_min": 6.0,
+                "soil_ph_max": 7.0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "data_source": "dien_bien_crops_ml.csv - thực tế thu thập tại Điện Biên",
+  "note": "Dữ liệu này là thông số kỹ thuật cây trồng. Sản lượng tấn/ha cho rau màu cà chua là tạ quy đổi, nên đọc cùng đơn vị tấn/ha với lúa/cà phê để đảm bảo API trả về cùng format."
+}

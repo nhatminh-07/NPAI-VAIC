@@ -1,141 +1,95 @@
 """
 Crop Recommendation Service - Dựa trên thông số đất và khí hậu.
 Model: RandomForestClassifier từ AI-Crop-Advisor
+Dữ liệu cây trồng: crop_info.json
 """
 
+import json
 import os
 from typing import Tuple, Optional
 
 import joblib
 import numpy as np
 
+from app.config import BASE_DIR
+
 # Đường dẫn model
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "ml", "models", "crop_recommendation")
 MODEL_PATH = os.path.join(MODEL_DIR, "crop_recommendation_model.pkl")
 ENCODER_PATH = os.path.join(MODEL_DIR, "label_encoder.pkl")
 
-# Thông tin cây trồng (crop information)
-CROP_INFO = {
-    "rice": {
-        "name_vi": "Lúa",
-        "season": "Chiêm xuân (Feb-May), Mùa (Jun-Oct)",
-        "duration": "110-120 ngày",
-        "yield": "4-6 tấn/ha",
-        "tips": "Cần nhiều nước, đất phù sa. Bón NPK cân đối.",
-    },
-    "maize": {
-        "name_vi": "Ngô",
-        "season": "Vụ xuân (Mar-Jul), Vụ thu (Aug-Nov)",
-        "duration": "90-120 ngày",
-        "yield": "8-12 tấn/ha",
-        "tips": "Cần ánh sáng tốt, thoát nước tốt.",
-    },
-    "chickpea": {
-        "name_vi": "Đậu gà",
-        "season": "Vụ đông (Nov-Mar)",
-        "duration": "90-120 ngày",
-        "yield": "1.5-2.5 tấn/ha",
-        "tips": "Chịu hạn tốt, cần đất thoáng.",
-    },
-    "kidneybeans": {
-        "name_vi": "Đậu đỏ",
-        "season": "Vụ xuân, vụ thu",
-        "duration": "70-90 ngày",
-        "yield": "1-2 tấn/ha",
-        "tips": "Cần đất tơi xốp, thoát nước.",
-    },
-    "mungbean": {
-        "name_vi": "Đậu xanh",
-        "season": "Vụ hè (May-Aug)",
-        "duration": "60-70 ngày",
-        "yield": "1-1.5 tấn/ha",
-        "tips": "Chịu nhiệt tốt, thu hoạch nhanh.",
-    },
-    "blackgram": {
-        "name_vi": "Đậu đen",
-        "season": "Vụ hè thu",
-        "duration": "75-90 ngày",
-        "yield": "1-1.8 tấn/ha",
-        "tips": "Cần ấm, cày đất sâu.",
-    },
-    "lentil": {
-        "name_vi": "Đậu lăng",
-        "season": "Vụ đông (Nov-Mar)",
-        "duration": "90-110 ngày",
-        "yield": "1-1.5 tấn/ha",
-        "tips": "Chịu lạnh, cần đất phù sa.",
-    },
-    "pomegranate": {
-        "name_vi": "Lựu",
-        "season": "Quanh năm",
-        "duration": "180-200 ngày (trái)",
-        "yield": "15-25 tấn/ha",
-        "tips": "Chịu hạn tốt, cần nhiều ánh sáng.",
-    },
-    "banana": {
-        "name_vi": "Chuối",
-        "season": "Quanh năm",
-        "duration": "9-12 tháng",
-        "yield": "25-40 tấn/ha",
-        "tips": "Cần nhiều nước, đất giàu dinh dưỡng.",
-    },
-    "mango": {
-        "name_vi": "Xoài",
-        "season": "Tết (Apr-Jun)",
-        "duration": "3-5 năm (trưởng thành)",
-        "yield": "10-20 tấn/ha",
-        "tips": "Cần khí hậu nhiệt đới, chịu hạn.",
-    },
-    "grapes": {
-        "name_vi": "Nho",
-        "season": "Dec-Mar (thu hoạch)",
-        "duration": "180-240 ngày",
-        "yield": "15-25 tấn/ha",
-        "tips": "Cần giàn, cắt tỉa định kỳ.",
-    },
-    "watermelon": {
-        "name_vi": "Dưa hấu",
-        "season": "Vụ xuân, vụ hè",
-        "duration": "70-90 ngày",
-        "yield": "20-30 tấn/ha",
-        "tips": "Cần nhiều nắng, tưới đều.",
-    },
-    "muskmelon": {
-        "name_vi": "Dưa lưới",
-        "season": "Vụ xuân",
-        "duration": "75-90 ngày",
-        "yield": "15-20 tấn/ha",
-        "tips": "Cần đất thoáng, không ngập nước.",
-    },
-    "apple": {
-        "name_vi": "Táo",
-        "season": "Sep-Nov (thu hoạch)",
-        "duration": "3-5 năm (trưởng thành)",
-        "yield": "15-30 tấn/ha",
-        "tips": "Cần lạnh để ra hoa, đất thoát nước.",
-    },
-    "orange": {
-        "name_vi": "Cam",
-        "season": "Nov-Mar (thu hoạch)",
-        "duration": "3-4 năm (trưởng thành)",
-        "yield": "20-30 tấn/ha",
-        "tips": "Cần đất sâu, tưới đều.",
-    },
-    "papaya": {
-        "name_vi": "Đu đủ",
-        "season": "Quanh năm",
-        "duration": "9-11 tháng",
-        "yield": "30-60 tấn/ha",
-        "tips": "Sinh trưởng nhanh, cần nhiều phân.",
-    },
-    "coffee": {
-        "name_vi": "Cà phê",
-        "season": "Oct-Dec (thu hoạch)",
-        "duration": "2-3 năm (trưởng thành)",
-        "yield": "2-4 tấn/ha",
-        "tips": "Cần bóng râm nhẹ, đất acid nhẹ.",
-    },
-}
+# Đường dẫn crop info JSON
+CROP_INFO_PATH = os.path.join(BASE_DIR, "app", "data", "crop_info.json")
+
+# Cache crop info
+_crop_info_cache = None
+
+
+def _load_crop_info() -> dict:
+    """Load crop info từ JSON file."""
+    global _crop_info_cache
+    if _crop_info_cache is not None:
+        return _crop_info_cache
+
+    try:
+        with open(CROP_INFO_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            # Build a flat dict: key = crop name (rice, coffee, vegetable, ...)
+            # với thông tin cơ bản nhất
+            _crop_info_cache = {}
+            for crop in data.get("crops", []):
+                name = crop["name"]
+                name_vi = crop.get("name_vi", name)
+                # Lấy variety đầu tiên
+                varieties = crop.get("varieties", [])
+                if varieties:
+                    var = varieties[0]
+                    seasons = var.get("seasons", [])
+                    if seasons:
+                        first_season = seasons[0]
+                        # Build season string
+                        season_str = ", ".join([s.get("season", "") for s in seasons])
+                        # Calculate duration range
+                        min_days = first_season.get("growth_days_min", 0)
+                        max_days = first_season.get("growth_days_max", 0)
+                        duration = f"{min_days}-{max_days} ngày" if min_days or max_days else "Tùy mùa"
+                        # Yield range
+                        min_yield = first_season.get("yield_ton_ha_min", 0)
+                        max_yield = first_season.get("yield_ton_ha_max", 0)
+                        yield_str = f"{min_yield}-{max_yield} tấn/ha" if min_yield or max_yield else "Tùy điều kiện"
+                        # Tips từ ideal_weather
+                        weather = first_season.get("ideal_weather", {})
+                        temp = weather.get("temp_c_min") and weather.get("temp_c_max")
+                        temp_str = f"Nhiệt: {weather.get('temp_c_min', '?')}-{weather.get('temp_c_max', '?')}°C" if temp else ""
+                        tips = temp_str if temp_str else "Tham khảo thêm"
+                    else:
+                        season_str = "Liên hệ"
+                        duration = "Liên hệ"
+                        yield_str = "Liên hệ"
+                        tips = "Cần tư vấn thêm"
+                else:
+                    season_str = "Liên hệ"
+                    duration = "Liên hệ"
+                    yield_str = "Liên hệ"
+                    tips = "Cần tư vấn thêm"
+
+                _crop_info_cache[name] = {
+                    "name_vi": name_vi,
+                    "season": season_str,
+                    "duration": duration,
+                    "yield": yield_str,
+                    "tips": tips,
+                }
+
+            return _crop_info_cache
+    except Exception as e:
+        print(f"[CropRecommender] Error loading crop_info.json: {e}")
+        # Fallback to empty dict
+        return {}
+
+
+# Load crop info at module level
+CROP_INFO = _load_crop_info()
 
 
 class CropRecommender:

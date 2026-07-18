@@ -6,7 +6,7 @@ Chạy: python seed_data.py
 """
 import random
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta, datetime
 
 # Fix Unicode on Windows
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -219,6 +219,12 @@ def run():
             base = base_yields.get(farm.crop.name, 5.0)
             predicted_yield = round(base * weather_factor * farm.area * random.uniform(0.9, 1.1), 2)
 
+            # Spread created_at thực sự vào từng quý (tháng giữa quý, ngày random)
+            # Để dashboard filter theo created_at sẽ ra dữ liệu cho từng kỳ
+            q_mid_month = (q_num - 1) * 3 + random.randint(1, 3)
+            q_created_day = random.randint(5, 25)
+            yield_created_at = datetime(q_year, q_mid_month, q_created_day, random.randint(8, 17), random.randint(0, 59))
+
             harvest_date = date(q_year, (q_num - 1) * 3 + random.randint(1, 3), random.randint(1, 28))
             season = f"{q_year}-Q{q_num}"
 
@@ -227,6 +233,7 @@ def run():
                 season=season,
                 predicted_yield=predicted_yield,
                 harvest_date=harvest_date,
+                created_at=yield_created_at,
             )
             db.add(yield_pred)
 
@@ -300,30 +307,23 @@ def run():
         region_crops[region.id] = crops_here or ["rice"]
     db.commit()
 
-    # --- Báo cáo sâu bệnh gắn vùng: ~60% số vùng mỗi quý có bệnh (tỷ lệ sâu bệnh ~60-70%,
-    #     tránh 100%). Bệnh CÙNG quý với vùng. ---
-    print("[*] Tao du lieu benh cay (gan vung canh tac)...")
-    for idx, (region, q_off) in enumerate(regions):
-        if idx % 5 >= 3:  # ~60% deterministic (0,1,2 có bệnh; 3,4 không)
-            continue
-        for _ in range(random.randint(2, 6)):
-            crop_type = random.choice(region_crops[region.id])
-            disease_name, sci_name = random.choice(DISEASES_BY_CROP[crop_type])
-            created = quarter_day(q_off)
-            db.add(DiseaseDetection(
-                farm_id=None,
-                district=region.district,
-                crop_type=crop_type,
+            q_mid_month = (q_num - 1) * 3 + random.randint(1, 3)
+            q_day = random.randint(5, 25)
+            d_created_at = datetime(q_year, q_mid_month, q_day, random.randint(8, 17), random.randint(0, 59))
+
+            detection = DiseaseDetection(
+                farm_id=farm.id,
                 image_url=f"/static/uploaded_images/disease_{random.randint(1,100)}.jpg",
                 disease_label=disease_name,
                 scientific_name=sci_name,
                 confidence=round(random.uniform(0.6, 0.95), 2),
-                severity=random.choice(SEVERITIES),
-                affected_plant_count=random.randint(5, 200),
-                recommendation="Xử lý theo khuyến nghị của cán bộ nông nghiệp.",
-                farming_region_id=region.id,
-                created_at=datetime.combine(created, datetime.min.time()),
-            ))
+                recommendation=reason,
+                crop_type=crop_type,
+                district=farm.location,
+                created_at=d_created_at,
+            )
+            db.add(detection)
+
     db.commit()
 
     # Thống kê

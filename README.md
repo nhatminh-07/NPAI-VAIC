@@ -258,7 +258,6 @@ Danh sách các endpoint đang được đăng ký (xác thực từ `/openapi.j
 6. Đang chạy tại: **https://agriplatform-neon.vercel.app**
 
 ## Môi trường
-
 ### Backend (.env)
 ```env
 DATABASE_URL=postgresql://postgres:<password>@<host>:5432/postgres

@@ -40,15 +40,6 @@ async def get_market_price_frontend(
     except Exception as e:
         raise HTTPException(500, f"Lỗi lấy dữ liệu giá: {e}")
 
-    # Calculate 7-day change
-    if len(result["history"]) >= 7:
-        old_price = result["history"][-8]["price"] if len(result["history"]) > 7 else result["history"][-2]["price"]
-        new_price = result["history"][-1]["price"]
-        change_7d = ((new_price - old_price) / old_price * 100) if old_price else 0
-    else:
-        change_7d = 0.0
-
-    # Map trend to Vietnamese label
     trend_labels = {
         "increasing": "Xu hướng tăng",
         "decreasing": "Xu hướng giảm",
@@ -58,16 +49,17 @@ async def get_market_price_frontend(
     return {
         "cropId": cropId,
         "cropName": CROP_NAMES.get(cropId, crop_name),
-        "unit": "VND/kg",  # result không có unit, hardcode
+        "unit": "VND/kg",
         "history": [
             {"date": p["date"], "price": p["price"]}
             for p in result["history"]
         ],
         "forecast": [
-            {"date": p["date"], "price": p["price"], "lowerBand": p["price"] * 0.95, "upperBand": p["price"] * 1.05}
+            {"date": p["date"], "price": p["price"], "lowerBand": p["price"] * 0.90, "upperBand": p["price"] * 1.10}
             for p in result["forecast"]
         ],
         "currentPrice": result["current_price"],
-        "change7dPercent": round(change_7d, 1),
+        "change7dPercent": result["change_pct"],
+        "changeDays": result["change_days"],
         "trendLabel": trend_labels.get(result["trend"], "Không xác định"),
     }

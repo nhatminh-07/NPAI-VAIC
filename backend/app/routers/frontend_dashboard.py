@@ -117,63 +117,22 @@ async def get_dashboard_frontend(
     periods_cur = [p for p in all_periods if _in_range(p.created_at, current_start, current_end)]
     periods_prev = [p for p in all_periods if _in_range(p.created_at, prev_start, prev_end)]
 
-    all_diseases = db.query(DiseaseDetection).all()
-    if crop_name:
-        all_diseases = [d for d in all_diseases if d.crop_type == crop_name]
-    diseases_cur = [d for d in all_diseases if _in_range(d.created_at, current_start, current_end)]
-    diseases_prev = [d for d in all_diseases if _in_range(d.created_at, prev_start, prev_end)]
+    # Tổng diện tích KHÔNG lọc theo kỳ - diện tích canh tác là cộng dồn (cán bộ
+    # cần thấy tổng diện tích canh tác hiện tại của tỉnh, không phải diện tích
+    # canh tác TRONG kỳ). Chỉ filter theo crop nếu có chọn.
+    cur_area = get_total_area(None, None)
+    prev_area = cur_area  # diện tích cộng dồn không đổi theo kỳ
 
-    # ===== KPI 1: Tổng diện tích =====
-    if crop_name:
-        # Lọc cây trồng: tổng diện tích các vụ canh tác của cây đó trong kỳ.
-        cur_area = sum(p.area_ha for p in periods_cur)
-        prev_area = sum(p.area_ha for p in periods_prev)
-    else:
-        # Không lọc: tổng diện tích tất cả VÙNG canh tác được tạo trong kỳ.
-        cur_area = sum(r.area_ha for r in regions_cur)
-        prev_area = sum(r.area_ha for r in regions_prev)
+    cur_yield = get_avg_yield(current_start, current_end)
+    prev_yield = get_avg_yield(prev_start, prev_end)
+    cur_disease = get_disease_count(current_start, current_end)
+    prev_disease = get_disease_count(prev_start, prev_end)
 
-    # Fallback an toàn: chưa có vùng nào trong TOÀN BỘ hệ thống (DB trống trước khi seed)
-    # -> dùng SUM(Farm.area) để dashboard không hoàn toàn trống. KHÔNG áp dụng cho trường
-    # hợp "kỳ này trống nhưng kỳ khác có dữ liệu" (đó là hành vi mong muốn của demo).
-    if not all_regions:
-        farms_q = db.query(Farm)
-        if crop_name:
-            crop = db.query(Crop).filter(Crop.name == crop_name).first()
-            if crop:
-                farms_q = farms_q.filter(Farm.crop_id == crop.id)
-        cur_area = float(sum(f.area for f in farms_q.all()))
-        prev_area = cur_area
-
-    # ===== KPI 2: Năng suất trung bình (tấn/ha, trọng số diện tích) =====
-    def area_weighted_yield(period_list) -> float:
-        area = sum(p.area_ha for p in period_list)
-        if area <= 0:
-            return 0.0
-        return sum(p.area_ha * _period_yield_per_ha(p) for p in period_list) / area
-
-    cur_yield = area_weighted_yield(periods_cur)
-    prev_yield = area_weighted_yield(periods_prev)
-
-    # ===== KPI 3: Số ca sâu bệnh =====
-    cur_disease = len(diseases_cur)
-    prev_disease = len(diseases_prev)
-
-    # ===== KPI 4: Tỷ lệ sâu bệnh (theo diện tích vùng canh tác TRONG KỲ) =====
-    def disease_rate(regions_in_term, diseases_in_term) -> float:
-        denom = sum(r.area_ha for r in regions_in_term)
-        if denom <= 0:
-            return 0.0
-        term_region_ids = {r.id for r in regions_in_term}
-        affected_ids = {
-            d.farming_region_id for d in diseases_in_term
-            if d.farming_region_id in term_region_ids
-        }
-        affected_area = sum(region_by_id[rid].area_ha for rid in affected_ids)
-        return affected_area / denom * 100
-
-    cur_rate = disease_rate(regions_cur, diseases_cur)
-    prev_rate = disease_rate(regions_prev, diseases_prev)
+    total_farms = max(db.query(func.count(Farm.id)).scalar() or 1, 1)
+    # Tỷ lệ sâu bệnh = (số ca bệnh trong kỳ) / (tổng farm) * 100
+    # Cap 100% để tránh >100% khi 1 farm có nhiều ca (ví dụ: 36 ca / 16 farm = 225%)
+    cur_rate = min(cur_disease / total_farms * 100, 100.0)
+    prev_rate = min(prev_disease / total_farms * 100, 100.0)
 
     kpis = [
         {

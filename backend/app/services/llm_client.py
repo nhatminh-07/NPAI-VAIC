@@ -7,7 +7,7 @@ Cấu hình qua biến môi trường (xem .env.example ở thư mục backend/)
   FPT_API_KEY   - bắt buộc để bật tính năng LLM. Tạo tại
                   marketplace.fptcloud.com/en/my-account#my-api-key
   FPT_BASE_URL  - mặc định https://mkp-api.fptcloud.com/v1
-  FPT_MODEL     - mặc định gemma-4-31b-it
+  FPT_MODEL     - mặc định gemma-4-31B-it
 
 Nếu FPT_API_KEY rỗng, is_configured() trả về False - nơi gọi (assistant_service)
 sẽ tự fallback sang câu trả lời rule-based, không có gì bị crash.

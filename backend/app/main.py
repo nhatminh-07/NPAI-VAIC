@@ -12,6 +12,7 @@ from app.routers import frontend_farming
 
 # Import seed_data module để có thể gọi
 import seed_data
+import seed_market_prices
 
 # Tạo bảng nếu chưa tồn tại (MVP dùng SQLite; khi lên Supabase có thể dùng Alembic)
 Base.metadata.create_all(bind=engine)
@@ -66,5 +67,16 @@ def trigger_seed():
     try:
         seed_data.run()
         return {"status": "ok", "message": "Seed data completed"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/admin/seed-prices")
+def trigger_seed_prices():
+    """Seed giá thị trường thực tế vào bảng MarketPrice trong DB."""
+    try:
+        import seed_market_prices as smp
+        smp.run()
+        return {"status": "ok", "message": "Market prices seeded into DB"}
     except Exception as e:
         return {"status": "error", "message": str(e)}

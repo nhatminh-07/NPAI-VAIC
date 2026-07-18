@@ -65,6 +65,8 @@ class MarketPriceResponse(BaseModel):
     trend: str  # "increasing" | "decreasing" | "stable"
     history: List[PricePoint]
     forecast: List[PricePoint]
+    change_pct: float = 0.0
+    change_days: int = 7
 
 
 # ---------- Dashboard ----------
