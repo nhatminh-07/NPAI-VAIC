@@ -1,33 +1,28 @@
+import Image from 'next/image';
 import { copy } from '@/constants/copy';
 
+// Logo ứng dụng (ảnh public/icon.png), dùng ở header các trang và màn chọn vai trò.
 interface LogoProps {
-  withWordmark?: boolean;
+  withWordmark?: boolean; // true = hiển thị kèm tên app bên cạnh icon
   className?: string;
   markClassName?: string;
+  /** Kích thước icon tính bằng px. Cũng chính là độ phân giải ảnh yêu cầu Next.js
+   * tối ưu ra, nên khi phóng to (vd size={96} ở màn chọn vai trò) ảnh vẫn nét,
+   * không bị mờ do phóng to 1 ảnh đã tối ưu ở độ phân giải nhỏ. */
+  size?: number;
 }
 
-export function Logo({ withWordmark, className = '', markClassName = '' }: LogoProps) {
+export function Logo({ withWordmark, className = '', markClassName = '', size = 28 }: LogoProps) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        className={`h-7 w-7 shrink-0 text-brand-600 ${markClassName}`}
-        aria-hidden="true"
-      >
-        <path
-          d="M12 21c-4.5-1.2-7.5-4.8-7.5-9.5C4.5 6.8 8.3 3.5 12 3c3.7.5 7.5 3.8 7.5 8.5 0 4.7-3 8.3-7.5 9.5z"
-          fill="currentColor"
-          fillOpacity={0.16}
-        />
-        <path
-          d="M12 21c-4.5-1.2-7.5-4.8-7.5-9.5C4.5 6.8 8.3 3.5 12 3c3.7.5 7.5 3.8 7.5 8.5 0 4.7-3 8.3-7.5 9.5z"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          strokeLinejoin="round"
-        />
-        <path d="M12 21V9M12 9c0-2.5 1.8-4.5 4-5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-      </svg>
+      <Image
+        src="/icon.png"
+        alt=""
+        width={size}
+        height={size}
+        style={{ width: size, height: size }}
+        className={`shrink-0 rounded-md object-contain ${markClassName}`}
+      />
       {withWordmark && <span className="text-lg font-bold text-ink-primary">{copy.appName}</span>}
     </span>
   );

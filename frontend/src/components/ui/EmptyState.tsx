@@ -2,6 +2,9 @@ import type { ReactElement } from 'react';
 import { Button } from './Button';
 import { Card } from './Card';
 
+// Khối hiển thị khi không có gì để render: lỗi gọi API (`error`) hoặc backend chưa
+// kết nối được / dữ liệu rỗng (`offline`). Có nút "Thử lại" tuỳ chọn qua prop onRetry.
+// Mọi trang gọi API trong app đều dùng component này để xử lý trạng thái lỗi thống nhất.
 type Tone = 'error' | 'offline';
 
 interface EmptyStateProps {

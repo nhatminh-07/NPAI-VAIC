@@ -1,20 +1,23 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import type { BadgeTone } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfidenceBar } from '@/components/ui/ConfidenceBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { copy } from '@/constants/copy';
-import { ApiError, detectDisease } from '@/lib/api';
-import type { DiseaseDetectionResult, Severity } from '@/types/api';
+import { ApiError, detectDisease, getFarmingRegions } from '@/lib/api';
+import type { CropType, DiseaseDetectionResult, FarmingRegion, Severity } from '@/types/api';
 
+// idle = chưa phân tích, loading = đang gọi API, success = có kết quả, error = gọi lỗi.
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+// Ánh xạ mức độ bệnh (trả về từ backend) sang màu Badge tương ứng.
 const severityTone: Record<Severity, BadgeTone> = {
   healthy: 'good',
   mild: 'warning',
@@ -22,6 +25,16 @@ const severityTone: Record<Severity, BadgeTone> = {
   severe: 'critical',
 };
 
+// Danh sách loại cây trồng cho dropdown "Loại cây trồng" - dùng chung format với
+// forecast/page.tsx (copy.forecast.crop.*) để tránh lặp chuỗi dịch.
+const cropOptions: { value: CropType; label: string }[] = [
+  { value: 'rice', label: copy.forecast.crop.rice },
+  { value: 'coffee', label: copy.forecast.crop.coffee },
+  { value: 'vegetable', label: copy.forecast.crop.vegetable },
+];
+
+// Trang chẩn đoán bệnh cây (nông dân chụp/tải ảnh lá cây lên, kèm loại cây trồng và
+// số cây bị ảnh hưởng, để backend chẩn đoán bệnh + gợi ý cách xử lý).
 export default function ScanPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -30,8 +43,29 @@ export default function ScanPage() {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [isDragOver, setIsDragOver] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [cropType, setCropType] = useState<CropType>('rice');
+  const [affectedPlantCount, setAffectedPlantCount] = useState('');
+  // Vùng canh tác (tuỳ chọn) - do cán bộ tạo ở trang /management. Không bắt buộc vì
+  // farmer có thể chưa có vùng nào được tạo sẵn.
+  const [regions, setRegions] = useState<FarmingRegion[]>([]);
+  const [regionId, setRegionId] = useState('');
+  const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    getFarmingRegions()
+      .then((res) => setRegions(res.regions))
+      .catch(() => {}); // tuỳ chọn - im lặng bỏ qua nếu lỗi, không chặn luồng chẩn đoán chính
+  }, []);
+
+  // Hợp lệ khi đã nhập và > 0. Lưu ý: chỉ HIỂN THỊ lỗi này khi `touched` = true (sau
+  // khi người dùng đã bấm "Phân tích" ít nhất 1 lần), để không báo lỗi ngay khi vừa
+  // chọn ảnh xong mà chưa kịp nhập gì.
+  const affectedPlantCountError =
+    affectedPlantCount !== '' && Number(affectedPlantCount) > 0 ? undefined : copy.scan.affectedPlantCountError;
+
+  // Dùng chung cho cả 2 luồng chọn ảnh: kéo-thả (handleDrop) và bấm chọn file
+  // (handleFileChange). Reset kết quả/trạng thái cũ vì đây coi như 1 lượt chẩn đoán mới.
   function selectFile(selected: File) {
     setFile(selected);
     setPreviewUrl(URL.createObjectURL(selected));
@@ -54,9 +88,11 @@ export default function ScanPage() {
 
   async function handleAnalyze() {
     if (!file) return;
+    setTouched(true); // bật hiển thị lỗi validate (nếu có) từ giờ trở đi
+    if (affectedPlantCountError) return;
     setStatus('loading');
     try {
-      const res = await detectDisease(file);
+      const res = await detectDisease(file, cropType, Number(affectedPlantCount), regionId ? Number(regionId) : undefined);
       setResult(res);
       setStatus('success');
     } catch (err) {
@@ -65,12 +101,19 @@ export default function ScanPage() {
     }
   }
 
+  // Dùng lại cho cả 3 nút "Lưu báo cáo" / "Chụp lại" / "Bỏ qua": báo cáo đã được
+  // backend lưu lại NGAY khi gọi detectDisease() thành công (không cần gọi API lần 2
+  // để "lưu"), nên cả 3 nút chỉ cần đưa người dùng quay về màn chọn ảnh ban đầu.
   function handleRetake() {
     setFile(null);
     setPreviewUrl(null);
     setResult(null);
     setStatus('idle');
     setChecked({});
+    setCropType('rice');
+    setAffectedPlantCount('');
+    setRegionId('');
+    setTouched(false);
     if (inputRef.current) inputRef.current.value = '';
   }
 
@@ -116,6 +159,8 @@ export default function ScanPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewUrl} alt="Ảnh cây trồng đã chọn" className="max-h-80 w-full object-cover" />
               {status === 'success' && (
+                // Placeholder cho tính năng bản đồ nhiệt (khoanh vùng bị bệnh trên ảnh) -
+                // backend/model chưa hỗ trợ, chỉ hiện dòng chữ báo "sẽ có ở bản sau".
                 <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
                   {copy.scan.heatmapPlaceholder}
                 </span>
@@ -124,22 +169,80 @@ export default function ScanPage() {
           </Card>
 
           {status !== 'success' && (
-            <div className="flex gap-3">
-              <Button variant="secondary" fullWidth onClick={() => inputRef.current?.click()}>
-                {copy.scan.changePhoto}
-              </Button>
-              <Button fullWidth onClick={handleAnalyze} disabled={status === 'loading'}>
-                {status === 'loading' ? copy.scan.analyzing : copy.scan.analyzeButton}
-              </Button>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </div>
+            <>
+              <div>
+                <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="scan-region">
+                  {copy.periodManagement.regionLabel} ({copy.scan.regionOptionalHint})
+                </label>
+                <Select
+                  id="scan-region"
+                  className="min-h-[44px]"
+                  value={regionId}
+                  onChange={setRegionId}
+                  options={[
+                    { value: '', label: copy.periodManagement.regionPlaceholder },
+                    ...regions.map((r) => ({ value: String(r.id), label: `${r.name} (${r.district})` })),
+                  ]}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="crop-type">
+                    {copy.forecast.cropLabel}
+                  </label>
+                  <Select
+                    id="crop-type"
+                    className="min-h-[44px]"
+                    value={cropType}
+                    onChange={(v) => setCropType(v as CropType)}
+                    options={cropOptions}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-base font-medium text-ink-secondary" htmlFor="affected-plant-count">
+                    {copy.scan.affectedPlantCountLabel}
+                  </label>
+                  <input
+                    id="affected-plant-count"
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder={copy.scan.affectedPlantCountPlaceholder}
+                    className={`min-h-[44px] w-full rounded-lg border bg-white px-3 text-base text-ink-primary transition-colors focus:outline-none focus:ring-2 ${
+                      touched && affectedPlantCountError
+                        ? 'border-status-critical focus:ring-status-critical/30'
+                        : 'border-line-axis focus:border-brand-500 focus:ring-brand-500/30'
+                    }`}
+                    value={affectedPlantCount}
+                    onChange={(e) => setAffectedPlantCount(e.target.value)}
+                    aria-invalid={touched && !!affectedPlantCountError}
+                  />
+                  {touched && affectedPlantCountError && (
+                    <p className="mt-1 text-sm text-status-critical">{affectedPlantCountError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="secondary" fullWidth onClick={() => inputRef.current?.click()}>
+                  {copy.scan.changePhoto}
+                </Button>
+                <Button fullWidth onClick={handleAnalyze} disabled={status === 'loading'}>
+                  {status === 'loading' ? copy.scan.analyzing : copy.scan.analyzeButton}
+                </Button>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </>
           )}
 
           {status === 'loading' && <Spinner label={copy.scan.analyzing} />}
@@ -156,7 +259,7 @@ export default function ScanPage() {
 
           {status === 'success' && result && (
             <div className="space-y-4">
-              <Card>
+              <Card tint>
                 <h2 className="text-2xl font-bold text-ink-primary">{result.diseaseName}</h2>
                 <p className="mb-3 text-base italic text-ink-secondary">{result.scientificName}</p>
                 <div className="mb-3">
@@ -176,7 +279,7 @@ export default function ScanPage() {
                 </Card>
               )}
 
-              <Card>
+              <Card tint>
                 <h3 className="mb-3 text-lg font-bold text-ink-primary">{copy.scan.recommendationsTitle}</h3>
                 <ul className="space-y-2">
                   {result.recommendations.map((rec, i) => (
@@ -199,12 +302,15 @@ export default function ScanPage() {
                 </ul>
               </Card>
 
+              <Button fullWidth onClick={handleRetake}>
+                {copy.scan.saveReport}
+              </Button>
               <div className="flex gap-3">
                 <Button variant="secondary" fullWidth onClick={handleRetake}>
                   {copy.scan.retake}
                 </Button>
-                <Button fullWidth onClick={() => {}}>
-                  {copy.scan.saveReport}
+                <Button variant="secondary" fullWidth onClick={handleRetake}>
+                  {copy.scan.skip}
                 </Button>
               </div>
             </div>

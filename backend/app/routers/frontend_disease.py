@@ -5,106 +5,62 @@ Response: DiseaseDetectionResult
 """
 import os
 import uuid
-from typing import List
+from typing import Optional
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from app.config import UPLOAD_DIR
+from app.database import get_db
+from app.models import DiseaseDetection, FarmingRegion
+from app.schemas import DiseaseReportItem, DiseaseReportListResponse
 from app.services.disease_model import get_model
+from app.services.disease_rules import get_disease_display
 
 router = APIRouter(prefix="/disease", tags=["Frontend - Disease Detection"])
 
+# GET /disease-report KHÔNG nằm dưới prefix /disease (đúng theo contract của frontend),
+# nên phải dùng router riêng không prefix, include song song ở main.py.
+report_router = APIRouter(tags=["Frontend - Disease Detection"])
+
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp"}
-
-
-def _get_scientific_name(disease_key: str) -> str:
-    """Map disease key to scientific name."""
-    scientific_names = {
-        "healthy": "Không có bệnh",
-        "rice_blast": "Pyricularia oryzae",
-        "bacterial_leaf_blight": "Xanthomonas oryzae pv. oryzae",
-        "coffee_leaf_rust": "Hemileia vastatrix",
-        "coffee_berry_borer": "Hypothenemus hampei",
-        "vegetable_downy_mildew": "Peronosporaceae",
-        "vegetable_aphids": "Aphidoidea",
-    }
-    return scientific_names.get(disease_key, "Không xác định")
-
-
-def _get_severity(disease_key: str, confidence: float) -> str:
-    """Map disease to severity level."""
-    if disease_key == "healthy":
-        return "healthy"
-    severity_map = {
-        "rice_blast": "moderate",
-        "bacterial_leaf_blight": "severe",
-        "coffee_leaf_rust": "mild",
-        "coffee_berry_borer": "moderate",
-        "vegetable_downy_mildew": "mild",
-        "vegetable_aphids": "moderate",
-    }
-    return severity_map.get(disease_key, "moderate")
-
-
-def _parse_recommendations(disease_key: str) -> List[str]:
-    """Generate recommendations based on disease key."""
-    base = [
-        "Theo dõi tình trạng cây trồng thường xuyên.",
-        "Kiểm tra độ ẩm đất và điều chỉnh tưới tiêu.",
-        "Tham khảo ý kiến chuyên gia nông nghiệp địa phương.",
-    ]
-    if disease_key == "healthy":
-        return ["Cây trồng khỏe mạnh. Tiếp tục duy trì chăm sóc bình thường."]
-    specific = {
-        "rice_blast": [
-            "Cách ly cây bệnh để tránh lây lan.",
-            "Phun thuốc trừ nấm Validacin hoặc Fuji-One.",
-            "Giảm bón đạm, tăng bón kali.",
-            "Thau nước thường xuyên để hạ nhiệt độ.",
-        ],
-        "bacterial_leaf_blight": [
-            "Cách ly cây bệnh ngay lập tức.",
-            "Phun thuốc kháng khuẩn đồng (Copper-based).",
-            "Không tưới nước lên lá.",
-            "Bón phân cân đối, tránh bón thừa đạm.",
-        ],
-        "coffee_leaf_rust": [
-            "Tỉa cành thông thoáng, tăng ánh sáng.",
-            "Phun thuốc gốc đồng hoặc Daconil.",
-            "Thu gom lá rụng tiêu hủy.",
-            "Bón phân đầy đủ để tăng sức đề kháng.",
-        ],
-        "coffee_berry_borer": [
-            "Thu hoạch sớm quả chín.",
-            "Phun thuốc Decamethrin hoặc Cypermethrin.",
-            "Vệ sinh vườn sạch sẽ.",
-            "Sử dụng bẫy côn trùng.",
-        ],
-        "vegetable_downy_mildew": [
-            "Cách ly cây bệnh.",
-            "Phun thuốc Ridomil Gold hoặc Acrobat.",
-            "Tăng cường thoáng gió, giảm độ ẩm.",
-            "Tránh tưới nước lên lá.",
-        ],
-        "vegetable_aphids": [
-            "Phun nước áp lực cao để rửa trôi rệp.",
-            "Sử dụng thuốc trừ sâu sinh học hoặc Confidor.",
-            "Trồng cây có mùi hương xua đuổi rệp.",
-            "Thu hút thiên địch (bọ rùa, ong ký sinh).",
-        ],
-    }
-    return specific.get(disease_key, base[:])
+VALID_CROP_TYPES = {"rice", "coffee", "vegetable"}
 
 
 @router.post("/detect")
 async def detect_disease_frontend(
     image: UploadFile = File(..., description="Ảnh lá/thân cây"),
     cropType: str = Form("rice", description="rice | coffee | vegetable"),
+    affectedPlantCount: str = Form(..., description="Số lượng cây bị ảnh hưởng, vd '5'"),
+    district: str = Form("Điện Biên", description="Huyện/khu vực báo cáo (tùy chọn)"),
+    regionId: Optional[str] = Form(None, description="ID vùng canh tác (tùy chọn), xem FarmingRegion"),
+    db: Session = Depends(get_db),
 ):
-    """Frontend API: Nhận diện sâu bệnh."""
+    """Frontend API: Nhận diện sâu bệnh + lưu báo cáo vào bảng disease_detections (hợp nhất)."""
     ext = os.path.splitext(image.filename or "")[1].lower()
     if ext not in ALLOWED_EXT:
         raise HTTPException(400, f"Định dạng ảnh không hỗ trợ: {ext}")
+
+    if cropType not in VALID_CROP_TYPES:
+        raise HTTPException(400, f"cropType không hợp lệ: {cropType}")
+
+    try:
+        plant_count = int(affectedPlantCount)
+    except (TypeError, ValueError):
+        raise HTTPException(400, "affectedPlantCount phải là số nguyên dạng chuỗi, vd '5'")
+    if plant_count <= 0:
+        raise HTTPException(400, "affectedPlantCount phải lớn hơn 0")
+
+    # regionId tuỳ chọn - nếu farmer chưa chọn vùng canh tác (chưa có vùng nào, hoặc bỏ
+    # qua) thì để None, KHÔNG chặn luồng chẩn đoán chính vì đây không phải field bắt buộc.
+    region_id: Optional[int] = None
+    if regionId:
+        try:
+            region_id = int(regionId)
+        except ValueError:
+            raise HTTPException(400, "regionId phải là số nguyên dạng chuỗi, vd '3'")
+        if not db.query(FarmingRegion).filter(FarmingRegion.id == region_id).first():
+            raise HTTPException(404, "Không tìm thấy vùng canh tác")
 
     # Save image
     filename = f"{uuid.uuid4().hex}{ext}"
@@ -113,27 +69,56 @@ async def detect_disease_frontend(
     with open(save_path, "wb") as f:
         f.write(content)
 
-    # Get model prediction
+    # Gọi model thật (MobileNetV2DiseaseModel.predict trả về (disease_key, confidence))
     model = get_model()
     disease_key, confidence = model.predict(save_path, crop_name=cropType)
+    disease_name_vi, scientific_name, severity, recommendations = get_disease_display(disease_key)
+    image_url = f"/static/uploaded_images/{filename}"
 
-    # Map disease key to Vietnamese label
-    label_names = {
-        "healthy": "Cây khỏe mạnh",
-        "rice_blast": "Đạo ôn lúa",
-        "bacterial_leaf_blight": "Bạc lá vi khuẩn",
-        "coffee_leaf_rust": "Gỉ sắt cà phê",
-        "coffee_berry_borer": "Sâu đục quả cà phê",
-        "vegetable_downy_mildew": "Sương mai rau màu",
-        "vegetable_aphids": "Rệp hại rau màu",
-    }
-    disease_name = label_names.get(disease_key, disease_key)
+    # Lưu vào bảng disease_detections hợp nhất (farm_id=None vì báo cáo officer không gắn farm cụ thể)
+    record = DiseaseDetection(
+        farm_id=None,
+        district=district,
+        crop_type=cropType,
+        image_url=image_url,
+        disease_label=disease_name_vi,
+        scientific_name=scientific_name,
+        confidence=confidence,
+        severity=severity,
+        affected_plant_count=plant_count,
+        recommendation="; ".join(recommendations),
+        farming_region_id=region_id,
+    )
+    db.add(record)
+    db.commit()
 
     return {
-        "diseaseName": disease_name,
-        "scientificName": _get_scientific_name(disease_key),
+        "diseaseName": disease_name_vi,
+        "scientificName": scientific_name,
         "confidence": confidence,
-        "severity": _get_severity(disease_key, confidence),
-        "recommendations": _parse_recommendations(disease_key),
-        "imageUrl": f"/static/uploaded_images/{filename}",
+        "severity": severity,
+        "recommendations": recommendations,
+        "imageUrl": image_url,
     }
+
+
+@report_router.get("/disease-report", response_model=DiseaseReportListResponse)
+@report_router.get("/disease-reports", response_model=DiseaseReportListResponse, include_in_schema=False)
+def get_disease_reports(db: Session = Depends(get_db)):
+    """Frontend API: GET /disease-report - dashboard tab officer đọc danh sách báo cáo,
+    đọc từ bảng disease_detections hợp nhất (bao gồm cả báo cáo tạo qua /detect-disease cũ).
+    """
+    rows = db.query(DiseaseDetection).order_by(DiseaseDetection.created_at.desc()).all()
+    reports = [
+        DiseaseReportItem(
+            id=row.id,
+            district=row.district,
+            cropType=row.crop_type,
+            diseaseName=row.disease_label,
+            severity=row.severity or "moderate",
+            affectedPlantCount=row.affected_plant_count or 0,
+            reportedAt=row.created_at.isoformat(),
+        )
+        for row in rows
+    ]
+    return DiseaseReportListResponse(reports=reports)

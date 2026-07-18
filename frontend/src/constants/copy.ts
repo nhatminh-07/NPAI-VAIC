@@ -1,7 +1,9 @@
-// Single source of truth for all Vietnamese user-facing copy.
+// Nguồn duy nhất chứa toàn bộ văn bản tiếng Việt hiển thị cho người dùng.
+// Các trang/component KHÔNG được viết chuỗi tiếng Việt trực tiếp trong JSX - luôn
+// import và dùng qua object `copy` này, để dễ rà soát/sửa nội dung ở một chỗ duy nhất.
 
 export const copy = {
-  appName: 'Nông Nghiệp Số Điện Biên',
+  appName: 'Gạo Bản',
 
   common: {
     loading: 'Đang tải...',
@@ -15,7 +17,7 @@ export const copy = {
   },
 
   rolePicker: {
-    title: 'Nông Nghiệp Số Điện Biên',
+    title: 'Gạo Bản - Đồng hành để vươn xa',
     subtitle: 'Chọn vai trò của bạn để bắt đầu',
     farmer: 'Tôi là nông dân',
     farmerDesc: 'Chẩn đoán bệnh cây, dự báo năng suất, xem giá thị trường',
@@ -27,7 +29,9 @@ export const copy = {
     scan: 'Chẩn đoán',
     forecast: 'Dự báo',
     prices: 'Giá cả',
+    management: 'Quản lý',
     dashboard: 'Tổng quan',
+    diseaseReport: 'Báo cáo sâu bệnh',
     switchRole: 'Đổi vai trò',
   },
 
@@ -35,6 +39,10 @@ export const copy = {
     title: 'Chẩn đoán bệnh cây trồng',
     uploadPrompt: 'Chạm để chụp hoặc chọn ảnh lá cây',
     uploadHint: 'Chụp cận cảnh vùng bị bệnh, đủ ánh sáng',
+    affectedPlantCountLabel: 'Số cây bị bệnh',
+    affectedPlantCountPlaceholder: 'Ví dụ: 5',
+    affectedPlantCountError: 'Vui lòng nhập số cây lớn hơn 0',
+    regionOptionalHint: 'không bắt buộc',
     changePhoto: 'Chọn ảnh khác',
     analyzeButton: 'Phân tích',
     analyzing: 'Đang phân tích ảnh...',
@@ -54,6 +62,7 @@ export const copy = {
     heatmapPlaceholder: 'Bản đồ nhiệt vùng bệnh sẽ được hỗ trợ trong phiên bản tiếp theo',
     saveReport: 'Lưu báo cáo',
     retake: 'Chụp lại',
+    skip: 'Bỏ qua',
     errorTitle: 'Không thể phân tích ảnh',
   },
 
@@ -124,5 +133,91 @@ export const copy = {
       diseaseCases: 'Ca bệnh',
     },
     errorTitle: 'Không thể tải bảng điều khiển',
+  },
+
+  diseaseReport: {
+    title: 'Báo cáo sâu bệnh',
+    columns: {
+      district: 'Huyện',
+      crop: 'Cây trồng',
+      diseaseName: 'Loại bệnh',
+      severity: 'Mức độ',
+      affectedPlantCount: 'Số cây bị bệnh',
+      reportedAt: 'Ngày báo cáo',
+    },
+    errorTitle: 'Không thể tải báo cáo sâu bệnh',
+  },
+
+  // Trang /management của CÁN BỘ: tạo & xem danh sách vùng canh tác.
+  regionManagement: {
+    title: 'Quản lý vùng canh tác',
+    createTitle: 'Tạo vùng canh tác mới',
+    nameLabel: 'Tên vùng canh tác',
+    namePlaceholder: 'Ví dụ: Vùng lúa Mường Ảng 1',
+    nameError: 'Vui lòng nhập tên vùng canh tác',
+    submitButton: 'Tạo vùng canh tác',
+    creating: 'Đang tạo...',
+    createErrorTitle: 'Không thể tạo vùng canh tác',
+    listTitle: 'Danh sách vùng canh tác',
+    columns: {
+      name: 'Tên vùng',
+      district: 'Huyện',
+      area: 'Diện tích (ha)',
+      createdAt: 'Ngày tạo',
+      actions: 'Thao tác',
+    },
+    loadErrorTitle: 'Không thể tải danh sách vùng canh tác',
+    deleteButton: 'Xóa',
+    deleting: 'Đang xóa...',
+    deleteConfirm: 'Xóa vùng canh tác này? Các vụ canh tác thuộc vùng cũng sẽ bị xóa.',
+    deleteErrorTitle: 'Không thể xóa vùng canh tác',
+  },
+
+  // Trang /management của NÔNG DÂN: khai báo vụ canh tác trong 1 vùng do cán bộ tạo.
+  periodManagement: {
+    title: 'Quản lý vụ canh tác',
+    createTitle: 'Thêm vụ canh tác mới',
+    regionLabel: 'Vùng canh tác',
+    regionPlaceholder: 'Chọn vùng canh tác',
+    noRegionsHint: 'Chưa có vùng canh tác nào được cán bộ tạo. Vui lòng liên hệ cán bộ nông nghiệp để được hỗ trợ.',
+    cropCountLabel: 'Số lượng cây trồng',
+    cropCountPlaceholder: 'Ví dụ: 200',
+    cropCountError: 'Vui lòng nhập số lượng cây lớn hơn 0',
+    submitButton: 'Thêm vụ canh tác',
+    creating: 'Đang thêm...',
+    createErrorTitle: 'Không thể thêm vụ canh tác',
+    listTitle: 'Danh sách vụ canh tác đã thêm',
+    columns: {
+      region: 'Vùng canh tác',
+      crop: 'Cây trồng',
+      area: 'Diện tích (ha)',
+      cropCount: 'Số lượng cây',
+      createdAt: 'Ngày thêm',
+    },
+    loadErrorTitle: 'Không thể tải danh sách vụ canh tác',
+    deleteButton: 'Xóa',
+    deleting: 'Đang xóa...',
+    deleteConfirm: 'Xóa vụ canh tác này?',
+    deleteErrorTitle: 'Không thể xóa vụ canh tác',
+  },
+
+  chat: {
+    title: 'Trợ lý AI',
+    subtitle: 'Hỏi đáp nhanh về dữ liệu nông nghiệp',
+    open: 'Mở trợ lý AI',
+    close: 'Đóng trợ lý AI',
+    inputPlaceholder: 'Nhập câu hỏi của bạn...',
+    send: 'Gửi',
+    thinking: 'Đang trả lời...',
+    emptyHint: 'Xin chào! Tôi có thể giúp gì cho bạn? Thử một gợi ý bên dưới hoặc tự đặt câu hỏi.',
+    errorMessage: 'Không thể nhận phản hồi từ trợ lý. Vui lòng thử lại.',
+    // Các câu gợi ý nhanh, hiển thị dạng nút bấm khi khung chat chưa có tin nhắn nào.
+    // Bấm vào 1 gợi ý sẽ gửi luôn câu đó đi (xem ChatWidget.tsx).
+    hints: [
+      'Tóm tắt những sự kiện trong quý 3 năm 2025',
+      'Tình hình sâu bệnh gần đây thế nào?',
+      'Dự báo giá lúa tuần tới ra sao?',
+      'Huyện nào có năng suất cao nhất?',
+    ],
   },
 } as const;

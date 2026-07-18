@@ -46,17 +46,62 @@ class Farm(Base):
 
 
 class DiseaseDetection(Base):
+    """Bảng thống nhất cho mọi lượt nhận diện sâu bệnh - dùng chung cho cả API cũ
+    (/detect-disease, có thể gắn farm_id) và API officer (/disease/detect, có thể
+    không gắn farm cụ thể, chỉ ghi nhận theo huyện/district).
+    """
     __tablename__ = "disease_detections"
 
     id = Column(Integer, primary_key=True, index=True)
-    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
+    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=True)  # nullable: officer report có thể không gắn farm có sẵn
+    district = Column(String, nullable=False, default="Điện Biên")
+    crop_type = Column(String, nullable=False)  # rice | coffee | vegetable
     image_url = Column(String, nullable=False)
-    disease_label = Column(String, nullable=False)
+    disease_label = Column(String, nullable=False)  # tên tiếng Việt, vd "Đạo ôn lúa"
+    scientific_name = Column(String, nullable=True)
     confidence = Column(Float, nullable=False)
+    severity = Column(String, nullable=True)  # healthy | mild | moderate | severe
+    affected_plant_count = Column(Integer, nullable=True)  # chỉ có khi báo cáo qua /disease/detect
     recommendation = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Vùng canh tác (tuỳ chọn) mà cây bị bệnh này thuộc về - xem FarmingRegion bên dưới.
+    # Nullable: báo cáo cũ / báo cáo không chọn vùng vẫn hoạt động bình thường. Dùng để
+    # tính "Tỷ lệ sâu bệnh" theo diện tích ở frontend_dashboard.py thay vì đếm theo farm.
+    farming_region_id = Column(Integer, ForeignKey("farming_regions.id"), nullable=True)
+
     farm = relationship("Farm", back_populates="disease_detections")
+    farming_region = relationship("FarmingRegion", back_populates="disease_detections")
+
+
+class FarmingRegion(Base):
+    """Vùng canh tác do cán bộ nông nghiệp tạo - 1 khu vực thuộc 1 huyện của Điện Biên.
+    Xem backend/REQUIREMENTS_farming_management.md để biết bối cảnh đầy đủ.
+    """
+    __tablename__ = "farming_regions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # vd "Vùng lúa Mường Ảng 1"
+    district = Column(String, nullable=False)  # PHẢI khớp giá trị ở frontend/src/constants/districts.ts
+    area_ha = Column(Float, nullable=False)  # diện tích toàn vùng cán bộ khoanh định
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    periods = relationship("FarmingPeriod", back_populates="region")
+    disease_detections = relationship("DiseaseDetection", back_populates="farming_region")
+
+
+class FarmingPeriod(Base):
+    """1 vụ canh tác nông dân khai báo, nằm trong 1 FarmingRegion có sẵn."""
+    __tablename__ = "farming_periods"
+
+    id = Column(Integer, primary_key=True, index=True)
+    region_id = Column(Integer, ForeignKey("farming_regions.id"), nullable=True)
+    crop_type = Column(String, nullable=False)  # rice | coffee | vegetable
+    area_ha = Column(Float, nullable=False)  # diện tích thực tế đang canh tác trong vụ này
+    crop_count = Column(Integer, nullable=True)  # số lượng cây trồng
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    region = relationship("FarmingRegion", back_populates="periods")
 
 
 class YieldPrediction(Base):

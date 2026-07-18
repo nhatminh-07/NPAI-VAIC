@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { copy } from '@/constants/copy';
 import { Logo } from '@/components/ui/Logo';
 
+// Màn hình đầu tiên người dùng thấy: chọn vào luồng "nông dân" (/scan, dùng
+// FarmerShell) hay "cán bộ nông nghiệp" (/dashboard, dùng OfficerShell). Đây KHÔNG
+// phải đăng nhập thật - chỉ là điều hướng theo vai trò, không có xác thực/phân quyền.
 function RoleCard({
   href,
   icon,
@@ -51,7 +54,15 @@ export default function RolePicker() {
       />
 
       <div className="mb-10 flex flex-col items-center text-center">
-        <Logo markClassName="h-14 w-14" />
+        <div className="relative mb-2">
+          <div
+            className="absolute inset-0 -z-10 scale-125 rounded-full bg-gradient-to-br from-brand-300/40 to-teal-300/30 blur-2xl"
+            aria-hidden="true"
+          />
+          <div className="rounded-3xl border border-white/60 bg-white/70 p-4 shadow-lg shadow-brand-900/5 backdrop-blur-sm">
+            <Logo size={96} markClassName="rounded-2xl drop-shadow-sm" />
+          </div>
+        </div>
         <h1 className="mt-4 text-3xl font-bold text-ink-primary">{copy.rolePicker.title}</h1>
         <p className="mt-2 text-lg text-ink-secondary">{copy.rolePicker.subtitle}</p>
       </div>

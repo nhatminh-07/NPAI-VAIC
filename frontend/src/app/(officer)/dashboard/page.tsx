@@ -1,5 +1,5 @@
 'use client';
-
+// test comment
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { copy } from '@/constants/copy';
@@ -24,11 +25,17 @@ import { recentQuarterOptions } from '@/constants/periods';
 import type { DashboardResult, DistrictRanking } from '@/types/api';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
+// Các cột được phép bấm để sắp xếp bảng xếp hạng huyện (không cho sắp theo `rank` vì
+// đó đã là kết quả xếp hạng của backend, không phải tiêu chí để người dùng tự sắp lại).
 type SortKey = keyof Pick<DistrictRanking, 'district' | 'yieldTPerHa' | 'outputTons' | 'diseaseCases'>;
 
+// Bảng màu dùng cho các mục trong biểu đồ "Số ca bệnh theo loại" - lặp vòng qua mảng
+// này nếu số loại bệnh nhiều hơn số màu (xem seriesPalette[i % seriesPalette.length]).
 const seriesPalette = ['#16a34a', '#0d9488', '#84a98c', '#d97706', '#65a30d'];
 const quarterOptions = recentQuarterOptions();
 
+// Hiển thị % thay đổi kèm mũi tên lên/xuống, dùng cho các thẻ KPI (so với quý trước /
+// so với cùng kỳ năm trước).
 function DeltaLabel({ value, suffix }: { value: number; suffix: string }) {
   const isUp = value >= 0;
   return (
@@ -45,6 +52,8 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('vi-VN').format(value);
 }
 
+// Khung "xương" hiển thị khi đang tải dữ liệu dashboard, mô phỏng đúng bố cục thật
+// (4 thẻ KPI, 1 biểu đồ lớn, 2 biểu đồ nhỏ, 1 bảng) để tránh giật layout khi dữ liệu về.
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -79,6 +88,8 @@ function DashboardSkeleton() {
   );
 }
 
+// Dashboard tổng hợp cho cán bộ nông nghiệp: chọn kỳ báo cáo (quý) + lọc theo cây
+// trồng, xem KPI tổng quan, các biểu đồ so sánh, và bảng xếp hạng huyện.
 export default function DashboardPage() {
   const [period, setPeriod] = useState(quarterOptions[0].value);
   const [cropId, setCropId] = useState<number | undefined>(undefined);
@@ -89,6 +100,8 @@ export default function DashboardPage() {
   const [retryToken, setRetryToken] = useState(0);
   const [offline, setOffline] = useState(false);
 
+  // Gọi lại dữ liệu mỗi khi đổi kỳ báo cáo, đổi bộ lọc cây trồng, hoặc bấm "Thử lại".
+  // Cờ `cancelled` tránh việc 1 request cũ trả về trễ đè lên kết quả của request mới hơn.
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
@@ -108,6 +121,8 @@ export default function DashboardPage() {
     };
   }, [period, cropId, retryToken]);
 
+  // Sắp xếp bảng xếp hạng huyện HOÀN TOÀN Ở PHÍA CLIENT (không gọi lại API) - backend
+  // chỉ cần trả về danh sách 1 lần, việc đổi cột sắp xếp chỉ là sắp lại mảng có sẵn.
   const sortedRankings = useMemo(() => {
     if (!data) return [];
     const rows = [...data.districtRankings];
@@ -120,6 +135,8 @@ export default function DashboardPage() {
     return rows;
   }, [data, sortKey, sortDir]);
 
+  // Bấm vào cột đang sắp xếp thì đảo chiều tăng/giảm; bấm cột khác thì chuyển sang sắp
+  // theo cột đó, mặc định chiều giảm dần (desc) trước.
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -141,29 +158,23 @@ export default function DashboardPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-ink-primary">{copy.dashboard.title}</h1>
         <div className="flex flex-wrap gap-3">
-          <select
-            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          <Select
+            className="min-h-[40px]"
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-          >
-            {quarterOptions.map((q) => (
-              <option key={q.value} value={q.value}>
-                {q.labelVi}
-              </option>
-            ))}
-          </select>
-          <select
-            className="min-h-[40px] rounded-lg border border-line-axis bg-white px-3 text-base text-ink-primary transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-            value={cropId ?? ''}
-            onChange={(e) => setCropId(e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">{copy.dashboard.allCrops}</option>
-            {crops.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nameVi}
-              </option>
-            ))}
-          </select>
+            onChange={setPeriod}
+            options={quarterOptions.map((q) => ({ value: q.value, label: q.labelVi }))}
+          />
+          {/* value rỗng '' = "Tất cả cây trồng" (cropId undefined khi gọi API); Select chỉ
+              làm việc với string nên phải quy đổi qua lại giữa string <-> number ở đây. */}
+          <Select
+            className="min-h-[40px]"
+            value={cropId !== undefined ? String(cropId) : ''}
+            onChange={(v) => setCropId(v ? Number(v) : undefined)}
+            options={[
+              { value: '', label: copy.dashboard.allCrops },
+              ...crops.map((c) => ({ value: String(c.id), label: c.nameVi })),
+            ]}
+          />
         </div>
       </div>
 
@@ -186,7 +197,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {data.kpis.map((kpi) => (
-                <Card key={kpi.id}>
+                <Card key={kpi.id} tint>
                   <p className="text-sm font-medium text-ink-secondary">{kpi.labelVi}</p>
                   <p className="mt-1 text-3xl font-extrabold text-ink-primary">
                     {formatNumber(kpi.value)} <span className="text-base font-semibold text-ink-secondary">{kpi.unit}</span>
@@ -200,7 +211,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <Card>
+          <Card tint>
             <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.districtYieldChartTitle}</h2>
             {data.districtYield.length === 0 ? (
               <EmptyState tone="offline" title={copy.common.empty} />
@@ -211,6 +222,9 @@ export default function DashboardPage() {
                     <CartesianGrid stroke="#e1e0d9" vertical={false} />
                     <XAxis dataKey="district" tick={{ fontSize: 12, fill: '#898781' }} stroke="#c3c2b7" interval={0} angle={-20} textAnchor="end" height={60} />
                     <YAxis tick={{ fontSize: 12, fill: '#898781' }} stroke="#c3c2b7" width={48} />
+                    {/* isAnimationActive={false} ở cả 3 Tooltip trong file này: tắt hiệu
+                        ứng trượt mặc định của Recharts để tooltip bám sát chuột ngay lập
+                        tức, không bị trễ/giật khi rê qua biểu đồ. */}
                     <Tooltip isAnimationActive={false} contentStyle={{ borderRadius: 8, borderColor: '#e1e0d9', fontSize: 13 }} />
                     <Legend wrapperStyle={{ fontSize: 13 }} />
                     <Bar dataKey="currentYieldTPerHa" name={copy.dashboard.currentPeriod} fill="#16a34a" radius={[4, 4, 0, 0]} />
@@ -222,7 +236,7 @@ export default function DashboardPage() {
           </Card>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
+            <Card tint>
               <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.diseaseCasesChartTitle}</h2>
               {data.diseaseCases.length === 0 ? (
                 <EmptyState tone="offline" title={copy.common.empty} />
@@ -251,7 +265,7 @@ export default function DashboardPage() {
               )}
             </Card>
 
-            <Card>
+            <Card tint>
               <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.diseaseTrendChartTitle}</h2>
               {data.diseaseTrend.length === 0 ? (
                 <EmptyState tone="offline" title={copy.common.empty} />
@@ -271,7 +285,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <Card>
+          <Card tint>
             <h2 className="mb-3 text-lg font-bold text-ink-primary">{copy.dashboard.rankingTableTitle}</h2>
             {sortedRankings.length === 0 ? (
               <EmptyState tone="offline" title={copy.common.empty} />

@@ -21,11 +21,14 @@ import type { MarketPriceResult } from '@/types/api';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+// 1 điểm dữ liệu trên biểu đồ ComposedChart bên dưới. `price` (lịch sử thực tế) và
+// `forecastPrice` (dự báo) tách riêng 2 trường vì Recharts vẽ chúng thành 2 đường
+// khác nhau (liền nét vs đứt nét) trên CÙNG 1 trục thời gian.
 interface ChartRow {
   date: string;
   price?: number;
   forecastPrice?: number;
-  band?: [number, number];
+  band?: [number, number]; // [cận dưới, cận trên] khoảng tin cậy dự báo, vẽ dạng dải mờ
 }
 
 function formatDateShort(iso: string): string {
@@ -37,6 +40,7 @@ function formatVnd(value: number): string {
   return new Intl.NumberFormat('vi-VN').format(value);
 }
 
+// Trang giá thị trường: chọn loại cây trồng (tab), xem giá hiện tại + biểu đồ lịch sử/dự báo.
 export default function PricesPage() {
   const [cropId, setCropId] = useState(crops[0].id);
   const [status, setStatus] = useState<Status>('idle');
@@ -44,6 +48,9 @@ export default function PricesPage() {
   const [retryToken, setRetryToken] = useState(0);
   const [offline, setOffline] = useState(false);
 
+  // Gọi lại API mỗi khi đổi tab cây trồng (cropId) hoặc bấm nút "Thử lại" (retryToken
+  // tăng lên để ép effect chạy lại dù cropId không đổi). Cờ `cancelled` để bỏ qua kết
+  // quả trả về TRỄ của 1 lần gọi cũ (vd đổi tab liên tục) - tránh hiển thị nhầm dữ liệu.
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
@@ -63,6 +70,11 @@ export default function PricesPage() {
     };
   }, [cropId, retryToken]);
 
+  // Ghép dữ liệu lịch sử (data.history) và dự báo (data.forecast) thành 1 mảng liên
+  // tục để 2 đường trên biểu đồ NỐI LIỀN nhau tại điểm giao, thay vì bị đứt quãng.
+  // Cách làm: điểm lịch sử cuối cùng được nhân đôi vai trò - vừa là điểm kết thúc của
+  // đường "price" (lịch sử), vừa là điểm bắt đầu của đường "forecastPrice" (dự báo) -
+  // gọi là "bridgeRow" (điểm nối). Nếu không có bridgeRow, 2 đường sẽ có khoảng hở.
   const chartData: ChartRow[] = useMemo(() => {
     if (!data || data.history.length === 0) return [];
     const historyRows: ChartRow[] = data.history.map((p) => ({ date: p.date, price: p.price }));
@@ -78,6 +90,8 @@ export default function PricesPage() {
       forecastPrice: p.price,
       band: [p.lowerBand, p.upperBand],
     }));
+    // Bỏ điểm lịch sử cuối cùng ở historyRows (slice(0, -1)) vì đã có bản sao của nó
+    // trong bridgeRow rồi - tránh trùng lặp 1 điểm trên biểu đồ.
     return [...historyRows.slice(0, -1), bridgeRow, ...forecastRows];
   }, [data]);
 
@@ -123,7 +137,7 @@ export default function PricesPage() {
 
       {status === 'success' && data && (
         <div className="space-y-4">
-          <Card>
+          <Card tint>
             <p className="text-base text-ink-secondary">{copy.prices.currentPriceLabel}</p>
             <p className="text-3xl font-extrabold text-ink-primary">
               {formatVnd(data.currentPrice)} <span className="text-lg font-semibold text-ink-secondary">{data.unit}</span>
@@ -145,7 +159,7 @@ export default function PricesPage() {
           {chartData.length === 0 ? (
             <EmptyState tone="offline" title={copy.common.empty} />
           ) : (
-            <Card>
+            <Card tint>
               <div className="mb-2 flex items-center gap-4 text-sm">
                 <span className="flex items-center gap-1.5 text-ink-secondary">
                   <span className="h-0.5 w-4 bg-brand-600" /> {copy.prices.chartLegendHistory}
@@ -176,6 +190,9 @@ export default function PricesPage() {
                       tickFormatter={(v: number) => formatVnd(v)}
                     />
                     <Tooltip
+                      // isAnimationActive={false}: tắt hiệu ứng trượt mặc định của
+                      // Recharts khi rê chuột - nếu không tắt, tooltip sẽ "trễ" 1 nhịp
+                      // so với vị trí con trỏ, gây cảm giác giật/chậm khi tương tác.
                       isAnimationActive={false}
                       formatter={(value, name) => [
                         `${formatVnd(Number(value))} ${data.unit}`,

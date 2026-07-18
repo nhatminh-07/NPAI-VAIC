@@ -28,3 +28,8 @@ SAMPLE_YIELD_CSV = os.path.join(DATA_DIR, "sample_yield_history.csv")
 DISEASE_RULES_JSON = os.path.join(DATA_DIR, "disease_recommendations.json")
 
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+
+# --- FPT AI (optional - chatbot assistant) ---
+FPT_API_KEY = os.getenv("FPT_API_KEY", "")
+FPT_BASE_URL = os.getenv("FPT_BASE_URL", "https://mkp-api.fptcloud.com/v1")
+FPT_MODEL = os.getenv("FPT_MODEL", "gemma-4-31b-it")

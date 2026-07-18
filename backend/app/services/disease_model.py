@@ -1,103 +1,87 @@
-﻿"""
-Mô hình chẩn đoán bệnh cây trồng với fallback heuristic.
-Hoạt động ổn định trên Windows dù PyTorch/TorchVision không import được.
+"""
+Mô hình chẩn đoán bệnh cây trồng dùng MobileNetV2 từ HuggingFace.
+Model: linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification
+38 classes từ Plant Village dataset, đạt 95.41% accuracy.
 """
 
-import json
 import os
-from typing import Any, Optional, Tuple
+from typing import Optional, Tuple
 
 from PIL import Image
 
 try:
     import torch
-    import torchvision.transforms as T
-except Exception:  # pragma: no cover - environment dependent
+    from transformers import MobileNetV2ForImageClassification, MobileNetV2ImageProcessor
+except Exception as exc:  # pragma: no cover - depends on local ML runtime
     torch = None
-    T = None
+    MobileNetV2ForImageClassification = None
+    MobileNetV2ImageProcessor = None
+    _IMPORT_ERROR = exc
+else:
+    _IMPORT_ERROR = None
 
-MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "ml", "models")
-MODEL_PATH = os.path.join(MODEL_DIR, "mobilenetv3_plant_disease.pth")
-LABELS_PATH = os.path.join(MODEL_DIR, "class_labels.json")
+MODEL_NAME = "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification"
 
-MOBILE_TO_APP_LABEL = {
-    "0": "bacterial_leaf_blight",
-    "1": "coffee_berry_borer",
-    "2": "coffee_leaf_rust",
-    "3": "healthy",
-    "4": "healthy",
-    "5": "vegetable_downy_mildew",
-    "6": "healthy",
-    "7": "vegetable_downy_mildew",
-    "8": "coffee_leaf_rust",
-    "9": "rice_blast",
-    "10": "healthy",
-    "11": "coffee_berry_borer",
-    "12": "coffee_berry_borer",
-    "13": "rice_blast",
-    "14": "healthy",
-    "15": "bacterial_leaf_blight",
-    "16": "bacterial_leaf_blight",
-    "17": "healthy",
-    "18": "bacterial_leaf_blight",
-    "19": "healthy",
-    "20": "rice_blast",
-    "21": "rice_blast",
-    "22": "healthy",
-    "23": "healthy",
-    "24": "healthy",
-    "25": "vegetable_downy_mildew",
-    "26": "rice_blast",
-    "27": "healthy",
-    "28": "bacterial_leaf_blight",
-    "29": "rice_blast",
-    "30": "rice_blast",
-    "31": "vegetable_downy_mildew",
-    "32": "vegetable_downy_mildew",
-    "33": "vegetable_aphids",
-    "34": "vegetable_downy_mildew",
-    "35": "vegetable_aphids",
-    "36": "vegetable_aphids",
-    "37": "healthy",
+# Map 38 class index sang app label (PlantVillage 38 classes)
+MOBILEV2_TO_APP_LABEL = {
+    0: "bacterial_leaf_blight",    # Apple Scab
+    1: "bacterial_leaf_blight",    # Apple Black Rot
+    2: "bacterial_leaf_blight",    # Cedar Apple Rust
+    3: "healthy",                   # Apple Healthy
+    4: "healthy",                  # Blueberry Healthy
+    5: "vegetable_downy_mildew",   # Cherry Powdery Mildew
+    6: "healthy",                  # Cherry Healthy
+    7: "vegetable_downy_mildew",   # Corn Cercospora
+    8: "coffee_leaf_rust",          # Corn Common Rust
+    9: "rice_blast",                # Corn Northern Leaf Blight
+    10: "healthy",                  # Corn Healthy
+    11: "rice_blast",               # Grape Black Rot
+    12: "rice_blast",               # Grape Esca
+    13: "rice_blast",               # Grape Leaf Blight
+    14: "healthy",                  # Grape Healthy
+    15: "bacterial_leaf_blight",    # Orange HLB
+    16: "bacterial_leaf_blight",   # Peach Bacterial Spot
+    17: "healthy",                  # Peach Healthy
+    18: "bacterial_leaf_blight",    # Pepper Bacterial Spot
+    19: "healthy",                  # Pepper Healthy
+    20: "rice_blast",               # Potato Early Blight
+    21: "rice_blast",               # Potato Late Blight
+    22: "healthy",                  # Potato Healthy
+    23: "healthy",                  # Raspberry Healthy
+    24: "healthy",                  # Soybean Healthy
+    25: "vegetable_downy_mildew",  # Squash Powdery Mildew
+    26: "rice_blast",              # Strawberry Leaf Scorch
+    27: "healthy",                  # Strawberry Healthy
+    28: "bacterial_leaf_blight",    # Tomato Bacterial Spot
+    29: "rice_blast",               # Tomato Early Blight
+    30: "rice_blast",               # Tomato Late Blight
+    31: "vegetable_downy_mildew",  # Tomato Leaf Mold
+    32: "vegetable_downy_mildew",   # Tomato Septoria Leaf Spot
+    33: "vegetable_aphids",         # Tomato Spider Mites
+    34: "vegetable_downy_mildew",   # Tomato Target Spot
+    35: "vegetable_aphids",         # Tomato Yellow Leaf Curl Virus
+    36: "vegetable_aphids",         # Tomato Mosaic Virus
+    37: "healthy",                  # Tomato Healthy
 }
 
-
+# Nhãn tiếng Việt
 APP_LABEL_NAMES = {
     "healthy": "Cây khỏe mạnh",
-    "rice_blast": "Đạo ôn lúa",
+    "rice_blast": "Đạo ôn / Lemaira",
     "bacterial_leaf_blight": "Bạc lá vi khuẩn",
-    "coffee_leaf_rust": "Gỉ sắt cà phê",
-    "coffee_berry_borer": "Sâu đục quả cà phê",
-    "vegetable_downy_mildew": "Sương mai rau màu",
-    "vegetable_aphids": "Rệp hại rau màu",
+    "coffee_leaf_rust": "Gỉ sắt",
+    "coffee_berry_borer": "Sâu đục quả",
+    "vegetable_downy_mildew": "Sương mai / Đốm lá",
+    "vegetable_aphids": "Rệp / Virus",
 }
 
 
-def _build_mobilenet_model(num_classes: int = 38) -> Optional[Any]:
-    """Build MobileNetV3-Small model architecture when torch is available."""
-    if torch is None or T is None:
-        return None
+class MobileNetV2DiseaseModel:
+    """Wrapper cho MobileNetV2 disease detection model từ HuggingFace."""
 
-    try:
-        import torchvision.models as models
-    except Exception as exc:  # pragma: no cover - environment dependent
-        print(f"[DiseaseModel] Could not import torchvision.models: {exc}")
-        return None
-
-    try:
-        return models.mobilenet_v3_small(num_classes=num_classes)
-    except Exception as exc:  # pragma: no cover - environment dependent
-        print(f"[DiseaseModel] Could not build MobileNetV3: {exc}")
-        return None
-
-
-class MobileNetDiseaseModel:
-    """Wrapper cho MobileNetV3-Small disease detection model."""
-
-    _instance: Optional["MobileNetDiseaseModel"] = None
-    _model: Optional[Any] = None
-    _labels: Optional[dict] = None
-    _transform: Optional[Any] = None
+    _instance: Optional["MobileNetV2DiseaseModel"] = None
+    _model = None
+    _processor = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -106,100 +90,102 @@ class MobileNetDiseaseModel:
         return cls._instance
 
     def _load_model(self) -> None:
-        """Load labels and model from local files when possible."""
-        if os.path.exists(LABELS_PATH):
-            with open(LABELS_PATH, "r", encoding="utf-8") as f:
-                self._labels = json.load(f)
-        else:
-            self._labels = {}
-
-        self._model = _build_mobilenet_model(num_classes=38)
-
-        if self._model is None:
-            print("[DiseaseModel] torch/torchvision unavailable or model build failed; using heuristic")
-            self._transform = None
-            return
-
-        if os.path.exists(MODEL_PATH):
-            try:
-                state_dict = torch.load(MODEL_PATH, map_location="cpu")
-                self._model.load_state_dict(state_dict)
-                print(f"[DiseaseModel] Loaded MobileNetV3 from {MODEL_PATH}")
-            except Exception as exc:
-                print(f"[DiseaseModel] Warning: Could not load model weights: {exc}")
-                print("[DiseaseModel] Falling back to heuristic model")
-                self._model = None
-                self._transform = None
-                return
-        else:
-            print(f"[DiseaseModel] Model not found at {MODEL_PATH}, using heuristic")
+        """Load model và processor từ HuggingFace Hub khi runtime hỗ trợ."""
+        if torch is None or MobileNetV2ForImageClassification is None or MobileNetV2ImageProcessor is None:
+            print(f"[DiseaseModel] torch/transformers unavailable: {_IMPORT_ERROR}")
+            print("[DiseaseModel] Falling back to heuristic model")
             self._model = None
-            self._transform = None
+            self._processor = None
             return
 
-        self._transform = T.Compose([
-            T.Resize((224, 224)),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        try:
+            print(f"[DiseaseModel] Loading MobileNetV2 from HuggingFace: {MODEL_NAME}")
+            self._processor = MobileNetV2ImageProcessor.from_pretrained(MODEL_NAME)
+            self._model = MobileNetV2ForImageClassification.from_pretrained(MODEL_NAME)
+            self._model.eval()
+            print("[DiseaseModel] MobileNetV2 loaded successfully!")
+        except Exception as e:
+            print(f"[DiseaseModel] Error loading HuggingFace model: {e}")
+            print("[DiseaseModel] Falling back to heuristic model")
+            self._model = None
+            self._processor = None
 
     def predict(self, image_path: str, crop_name: str = "rice") -> Tuple[str, float]:
-        """Dự đoán bệnh từ ảnh."""
+        """
+        Dự đoán bệnh từ ảnh.
+
+        Args:
+            image_path: Đường dẫn ảnh
+            crop_name: Loại cây (rice/coffee/vegetable)
+
+        Returns:
+            Tuple[str, float]: (disease_key, confidence)
+        """
         image = Image.open(image_path).convert("RGB")
 
-        if self._model is None or self._transform is None or torch is None:
+        if self._model is None or self._processor is None or torch is None:
             return self._heuristic_predict(image, crop_name)
 
-        img_tensor = self._transform(image).unsqueeze(0)
+        try:
+            # Preprocess ảnh
+            inputs = self._processor(images=image, return_tensors="pt")
 
-        with torch.no_grad():
-            outputs = self._model(img_tensor)
-            probs = torch.softmax(outputs, dim=-1)[0]
-            confidence, predicted_idx = torch.max(probs, dim=-1)
-            predicted_idx = predicted_idx.item()
-            confidence = confidence.item()
+            # Predict
+            with torch.no_grad():
+                outputs = self._model(**inputs)
+                probs = torch.softmax(outputs.logits, dim=-1)[0]
+                confidence, predicted_idx = torch.max(probs, dim=-1)
+                predicted_idx = predicted_idx.item()
+                confidence = confidence.item()
 
-        raw_label = self._labels.get(str(predicted_idx), f"Class_{predicted_idx}")
-        app_label = MOBILE_TO_APP_LABEL.get(str(predicted_idx), "healthy")
-        return app_label, round(confidence, 2)
+            # Map sang app label
+            disease_key = MOBILEV2_TO_APP_LABEL.get(predicted_idx, "healthy")
+
+            return disease_key, round(confidence, 2)
+
+        except Exception as e:
+            print(f"[DiseaseModel] Prediction error: {e}")
+            return self._heuristic_predict(image, crop_name)
 
     def _heuristic_predict(self, image: Image.Image, crop_name: str) -> Tuple[str, float]:
-        """Fallback heuristic khi không có model."""
-        image.thumbnail((220, 220))
+        """Fallback heuristic dựa trên màu sắc ảnh."""
+        image.thumbnail((224, 224))
         pixels = list(image.getdata())
         total = max(len(pixels), 1)
 
-        green_count = sum(1 for r, g, b in pixels if g > r and g > b and g > 60)
-        brown_count = sum(1 for r, g, b in pixels if r > 100 and g > 60 and b < 90 and r >= g)
-        dark_count = sum(1 for r, g, b in pixels if r < 70 and g < 70 and b < 70)
+        # Đếm pixels theo màu
+        green_count = sum(1 for r, g, b in pixels if g > r + 15 and g > b + 15)
+        brown_count = sum(1 for r, g, b in pixels if r > 90 and g > 50 and b < 80 and r > g)
+        yellow_count = sum(1 for r, g, b in pixels if r > 150 and g > 150 and b < 100)
+        dark_count = sum(1 for r, g, b in pixels if r < 60 and g < 60 and b < 60)
 
         green_ratio = green_count / total
         brown_ratio = brown_count / total
+        yellow_ratio = yellow_count / total
         dark_ratio = dark_count / total
 
-        if brown_ratio < 0.06 and green_ratio > 0.45:
-            return "healthy", round(min(0.95, 0.88 + green_ratio * 0.08), 2)
+        # Cây khỏe: nhiều xanh lá
+        if green_ratio > 0.5 and brown_ratio < 0.08:
+            return "healthy", round(min(0.92, 0.80 + green_ratio * 0.15), 2)
 
-        if crop_name == "rice":
-            if brown_ratio > 0.18:
-                return "rice_blast", round(min(0.96, 0.82 + brown_ratio * 0.8), 2)
-            return "bacterial_leaf_blight", round(min(0.95, 0.78 + brown_ratio * 0.7), 2)
-
-        if crop_name == "coffee":
-            if dark_ratio > 0.12 and brown_ratio > 0.15:
-                return "coffee_berry_borer", round(min(0.96, 0.80 + brown_ratio * 0.9), 2)
-            return "coffee_leaf_rust", round(min(0.95, 0.77 + brown_ratio * 0.8), 2)
-
-        if dark_ratio > 0.11 and brown_ratio > 0.12:
-            return "vegetable_downy_mildew", round(min(0.95, 0.78 + brown_ratio * 0.7), 2)
-        return "vegetable_aphids", round(min(0.94, 0.75 + brown_ratio * 0.6), 2)
-
-
-_model_instance: Optional[MobileNetDiseaseModel] = None
+        # Các loại bệnh dựa trên tỷ lệ màu
+        if brown_ratio > 0.20:
+            return "rice_blast", round(min(0.94, 0.78 + brown_ratio * 0.8), 2)
+        elif yellow_ratio > 0.15:
+            return "coffee_leaf_rust", round(min(0.93, 0.75 + yellow_ratio * 1.0), 2)
+        elif dark_ratio > 0.15:
+            return "vegetable_downy_mildew", round(min(0.92, 0.72 + dark_ratio * 1.0), 2)
+        elif brown_ratio > 0.10:
+            return "bacterial_leaf_blight", round(min(0.91, 0.70 + brown_ratio * 1.0), 2)
+        else:
+            return "vegetable_aphids", round(min(0.88, 0.68 + brown_ratio * 0.8), 2)
 
 
-def get_model() -> MobileNetDiseaseModel:
+_model_instance: Optional[MobileNetV2DiseaseModel] = None
+
+
+def get_model() -> MobileNetV2DiseaseModel:
     global _model_instance
     if _model_instance is None:
-        _model_instance = MobileNetDiseaseModel()
+        _model_instance = MobileNetV2DiseaseModel()
     return _model_instance

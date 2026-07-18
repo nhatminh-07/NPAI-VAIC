@@ -7,10 +7,17 @@ import { copy } from '@/constants/copy';
 import { Logo } from '@/components/ui/Logo';
 import { PageTransition } from '@/components/layout/PageTransition';
 
+// Khung giao diện dùng chung cho các trang dành cho NÔNG DÂN (/scan, /forecast,
+// /prices) - dạng mobile-first: header cố định phía trên, thanh điều hướng (tab bar)
+// cố định phía dưới, nội dung trang cuộn ở giữa. Áp dụng qua app/(farmer)/layout.tsx
+// (route group "(farmer)" trong Next.js App Router).
 interface FarmerShellProps {
   children: ReactNode;
 }
 
+// Danh sách tab điều hướng dưới cùng, đúng theo thứ tự hiển thị trái→phải. Thứ tự này
+// cũng được PageTransition.tsx dùng để tính chiều trượt (trượt phải khi chuyển sang
+// tab bên phải, trượt trái khi quay lại tab bên trái).
 const tabs = [
   {
     to: '/scan',
@@ -36,7 +43,17 @@ const tabs = [
     label: copy.nav.prices,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m0 0c-2.2 0-4-1.1-4-2.5M12 21c2.2 0 4-1.1 4-2.5M12 3c2.2 0 4 1.1 4 2.5S14.2 8 12 8s-4 1.1-4 2.5S9.8 13 12 13s4 1.1 4 2.5" />
+        <line x1="12" y1="2" x2="12" y2="22" strokeLinecap="round" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+      </svg>
+    ),
+  },
+  {
+    to: '/farming-periods',
+    label: copy.nav.management,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
       </svg>
     ),
   },
@@ -47,7 +64,7 @@ export function FarmerShell({ children }: FarmerShellProps) {
 
   return (
     <div className="flex min-h-svh flex-col bg-plane">
-      <header className="flex items-center justify-between border-b border-line-border bg-surface/90 px-4 py-3 backdrop-blur-sm">
+      <header className="flex items-center justify-between border-b border-line-border bg-gradient-to-r from-surface/90 to-brand-50/70 px-4 py-3 backdrop-blur-sm">
         <Logo withWordmark />
         <Link href="/" className="min-h-[44px] px-2 py-2 text-sm font-medium text-brand-700">
           {copy.nav.switchRole}
@@ -56,7 +73,7 @@ export function FarmerShell({ children }: FarmerShellProps) {
       <main className="flex-1 overflow-x-hidden overflow-y-auto pb-24">
         <PageTransition>{children}</PageTransition>
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line-border bg-surface/95 backdrop-blur-sm">
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line-border bg-gradient-to-r from-surface/95 to-brand-50/60 backdrop-blur-sm">
         <div className="mx-auto flex max-w-md items-stretch justify-around">
           {tabs.map((tab) => {
             const isActive = pathname === tab.to;
