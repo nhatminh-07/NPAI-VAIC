@@ -87,6 +87,46 @@ class DashboardResponse(BaseModel):
     year_over_year_note: str
 
 
+# ---------- Quản lý vùng canh tác & vụ canh tác ----------
+class FarmingRegionCreate(BaseModel):
+    name: str
+    district: str
+    areaHa: float = Field(..., gt=0)
+
+
+class FarmingRegionItem(BaseModel):
+    id: int
+    name: str
+    district: str
+    areaHa: float
+    createdAt: str  # ISO date string
+
+
+class FarmingRegionListResponse(BaseModel):
+    regions: List[FarmingRegionItem]
+
+
+class FarmingPeriodCreate(BaseModel):
+    regionId: int
+    cropType: str = Field(..., examples=["rice", "coffee", "vegetable"])
+    areaHa: float = Field(..., gt=0)
+    cropCount: Optional[int] = Field(default=None, gt=0)
+
+
+class FarmingPeriodItem(BaseModel):
+    id: int
+    regionId: int
+    regionName: str
+    cropType: str
+    areaHa: float
+    cropCount: int
+    createdAt: str  # ISO date string
+
+
+class FarmingPeriodListResponse(BaseModel):
+    periods: List[FarmingPeriodItem]
+
+
 # ---------- AI Assistant (Chatbot) ----------
 class ChatMessage(BaseModel):
     role: str  # "user" | "assistant"

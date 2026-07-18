@@ -8,7 +8,7 @@ import { useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 
 // Thứ tự phải khớp với mảng `tabs` trong FarmerShell.tsx để tính đúng chiều trượt.
-const tabOrder = ['/scan', '/forecast', '/prices'];
+const tabOrder = ['/scan', '/forecast', '/prices', '/farming-periods'];
 
 interface PageTransitionProps {
   children: ReactNode;

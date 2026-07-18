@@ -13,14 +13,14 @@ sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 from app.database import SessionLocal, Base, engine
-from app.models import Crop, Farm, DiseaseDetection, YieldPrediction
+from app.models import Crop, Farm, DiseaseDetection, YieldPrediction, FarmingRegion, FarmingPeriod
 
 random.seed()
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
-# Quận/huyện Điện Biên
+# Quận/huyện Điện Biên (dùng cho dữ liệu Farm cũ - có tiền tố)
 DISTRICTS = [
     "Thành phố Điện Biên Phủ",
     "Huyện Tuần Giáo",
@@ -31,6 +31,21 @@ DISTRICTS = [
     "Huyện Mường Ảng",
     "Huyện Nậm Pồ",
 ]
+
+# Tên huyện KHỚP frontend/src/constants/districts.ts (KHÔNG tiền tố) - dùng cho hệ thống
+# vùng canh tác mới, để dữ liệu seed và dữ liệu cán bộ tạo qua UI dùng chung 1 chuẩn tên.
+FRONTEND_DISTRICTS = [
+    "Điện Biên", "Điện Biên Đông", "Mường Ảng", "Mường Chà",
+    "Mường Nhé", "Nậm Pồ", "Tủa Chùa", "Tuần Giáo",
+]
+
+# Bệnh theo loại cây (tên tiếng Việt + tên khoa học) - dùng cho báo cáo sâu bệnh gắn vùng.
+DISEASES_BY_CROP = {
+    "rice": [("Đạo ôn lúa", "Pyricularia oryzae"), ("Bạc lá vi khuẩn", "Xanthomonas oryzae")],
+    "coffee": [("Gỉ sắt cà phê", "Hemileia vastatrix"), ("Sâu đục quả cà phê", "Hypothenemus hampei")],
+    "vegetable": [("Sương mai rau màu", "Peronospora parasitica"), ("Rệp hại rau màu", "Aphidoidea")],
+}
+SEVERITIES = ["mild", "moderate", "severe"]
 
 # Tên nông dân giả
 FARMER_NAMES = [
@@ -224,30 +239,73 @@ def run():
 
     db.commit()
 
-    # Tạo disease detections
-    print("[*] Tao du lieu benh cay...")
-
-    for q in range(4):
+    # ==================================================================================
+    # HỆ THỐNG QUẢN LÝ (hợp nhất): Vùng canh tác -> Vụ canh tác -> Báo cáo sâu bệnh.
+    # Toàn bộ dashboard đọc từ đây (xem app/routers/frontend_dashboard.py).
+    #
+    # QUAN TRỌNG cho DEMO: mỗi KỲ (quý) có dữ liệu RIÊNG, và QUÝ HIỆN TẠI (Quý 3/2026 khi
+    # demo) được để TRỐNG cố ý - chỉ seed 3 quý TRƯỚC (q_off 3,2,1 = Q4/2025, Q1/2026,
+    # Q2/2026). Trong lúc demo, cán bộ/nông dân tạo dữ liệu mới -> created_at = bây giờ =
+    # quý hiện tại -> quý hiện tại dần được lấp đầy trực tiếp trên dashboard.
+    # ==================================================================================
+    def quarter_day(q_offset):
+        """1 ngày ngẫu nhiên nằm trong quý cách quý hiện tại `q_offset` quý về trước."""
         q_year = today.year
-        q_num = (today.month - 1) // 3 + 1 - q
+        q_num = (today.month - 1) // 3 + 1 - q_offset
         while q_num <= 0:
             q_num += 4
             q_year -= 1
+        month = (q_num - 1) * 3 + random.randint(1, 3)
+        return date(q_year, month, random.randint(1, 20))
 
-        q_weather = get_weather_condition(q)
-        q_disease_factor = get_disease_factor(q_weather)
+    # Số vùng canh tác cho từng quý trước -> tổng diện tích KHÁC NHAU rõ giữa các kỳ
+    # (Q4/2025: 3 vùng, Q1/2026: 4 vùng, Q2/2026: 5 vùng). Quý hiện tại (q_off=0): 0 vùng.
+    TERMS_TO_SEED = {3: 3, 2: 4, 1: 5}
 
-        base_cases = random.randint(15, 35)
-        cases = int(base_cases * q_disease_factor)
+    def quarter_label(q_offset):
+        """Nhãn quý dạng 'Q2/2026' cho quý cách quý hiện tại q_offset quý."""
+        q_year = today.year
+        q_num = (today.month - 1) // 3 + 1 - q_offset
+        while q_num <= 0:
+            q_num += 4
+            q_year -= 1
+        return f"Q{q_num}/{q_year}"
 
-        for _ in range(cases):
-            farm = random.choice(farms)
-            disease_name, crop_type, _ = random.choices(
-                DISEASES, weights=[d[2] for d in DISEASES], k=1
-            )[0]
+    print("[*] Tao vung canh tac (cac quy truoc, chua co Q hien tai)...")
+    regions = []  # list[(FarmingRegion, q_off)]
+    for q_off, n_regions in TERMS_TO_SEED.items():
+        qlabel = quarter_label(q_off)
+        for i in range(n_regions):
+            dist = FRONTEND_DISTRICTS[i % len(FRONTEND_DISTRICTS)]
+            created = quarter_day(q_off)
+            region = FarmingRegion(
+                name=f"Vùng canh tác {dist} ({qlabel})",
+                district=dist,
+                area_ha=round(random.uniform(25, 60), 1),
+                created_at=datetime.combine(created, datetime.min.time()),
+            )
+            db.add(region)
+            regions.append((region, q_off))
+    db.commit()
 
-            reasons = WEATHER_REASONS.get(q_weather, WEATHER_REASONS["humid"])
-            reason = random.choice(reasons)
+    # --- Vụ canh tác: mỗi vùng 1-2 vụ, CÙNG quý với vùng ---
+    print("[*] Tao vu canh tac...")
+    region_crops = {}  # region_id -> danh sách crop_type để gắn bệnh cho đúng cây
+    for region, q_off in regions:
+        crops_here = []
+        for _ in range(random.randint(1, 2)):
+            crop_type = random.choice(["rice", "coffee", "vegetable"])
+            crops_here.append(crop_type)
+            created = quarter_day(q_off)
+            db.add(FarmingPeriod(
+                region_id=region.id,
+                crop_type=crop_type,
+                area_ha=round(random.uniform(2, 8), 1),
+                crop_count=random.randint(100, 2000),
+                created_at=datetime.combine(created, datetime.min.time()),
+            ))
+        region_crops[region.id] = crops_here or ["rice"]
+    db.commit()
 
             q_mid_month = (q_num - 1) * 3 + random.randint(1, 3)
             q_day = random.randint(5, 25)
@@ -257,6 +315,7 @@ def run():
                 farm_id=farm.id,
                 image_url=f"/static/uploaded_images/disease_{random.randint(1,100)}.jpg",
                 disease_label=disease_name,
+                scientific_name=sci_name,
                 confidence=round(random.uniform(0.6, 0.95), 2),
                 recommendation=reason,
                 crop_type=crop_type,
@@ -271,11 +330,10 @@ def run():
     print("\n[*] HOAN THANH! Thong ke du lieu:")
     print(f"   - Farms: {db.query(Farm).count()}")
     print(f"   - Yield Predictions: {db.query(YieldPrediction).count()}")
+    print(f"   - Farming Regions: {db.query(FarmingRegion).count()}")
+    print(f"   - Farming Periods: {db.query(FarmingPeriod).count()}")
     print(f"   - Disease Detections: {db.query(DiseaseDetection).count()}")
     print(f"\n   Thoi tiet hien tai: {weather.upper()}")
-    print(f"   Ly do benh theo thoi tiet:")
-    for r in WEATHER_REASONS[weather][:2]:
-        print(f"     - {r}")
 
 
 if __name__ == "__main__":

@@ -64,6 +64,8 @@ def add_quarterly_data(start_year=2025, quarters=8):
                     for _ in range(random.randint(1, 3)):
                         db.add(DiseaseDetection(
                             farm_id=farm.id,
+                            district=farm.location,
+                            crop_type=farm.crop.name if farm.crop else "rice",
                             image_url="/static/uploaded_images/demo.jpg",
                             disease_label=random.choice(DISEASE_LABELS),
                             confidence=round(random.uniform(0.6, 0.95), 2),
