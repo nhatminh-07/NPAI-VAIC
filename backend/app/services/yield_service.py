@@ -2,7 +2,7 @@
 Yield Forecast Service - Dự báo năng suất dựa trên thời tiết thực tế.
 Luồng:
 1. Lấy thời tiết hiện tại từ Open-Meteo API
-2. Đối chiếu với điều kiện lý tưởng của từng loại cây
+2. Đối chiếu với điều kiện lý tưởng của từng loại cây (từ dataset dien_bien_crops_ml.csv)
 3. Tính độ lệch và đưa ra dự báo
 4. Khuyến cáo thu hoạch sớm/nорма/nếu thời tiết nguy hiểm
 """
@@ -10,61 +10,40 @@ Luồng:
 from datetime import date, timedelta
 from typing import Optional
 
+import pandas as pd
+
+from app.config import BASE_DIR
 from app.services.weather_service import get_current_weather, get_forecast_7d
 
-# Thời tiết lý tưởng cho từng loại cây trồng
-OPTIMAL_WEATHER = {
-    "rice": {
-        "name_vi": "Lúa",
-        "name_en": "Rice",
-        "growth_days": 110,
-        "temp_min": 20.0,
-        "temp_max": 30.0,
-        "temp_optimal": 25.0,
-        "rainfall_min": 150.0,
-        "rainfall_max": 300.0,
-        "rainfall_optimal": 200.0,
-        "humidity_min": 70.0,
-        "humidity_max": 85.0,
-        "humidity_optimal": 78.0,
-        "rain_tolerance": "high",  # Ưa nước, mưa nhiều không sao
-        "notes": "Cây lúa ưa nước, cần tưới đều đặn. Mưa nhiều là điều kiện lý tưởng.",
-    },
-    "coffee": {
-        "name_vi": "Cà phê",
-        "name_en": "Coffee",
-        "growth_days": 240,
-        "temp_min": 15.0,
-        "temp_max": 28.0,
-        "temp_optimal": 22.0,
-        "rainfall_min": 150.0,
-        "rainfall_max": 250.0,
-        "rainfall_optimal": 180.0,
-        "humidity_min": 75.0,
-        "humidity_max": 90.0,
-        "humidity_optimal": 82.0,
-        "rain_tolerance": "medium",  # Không thích nước đọng
-        "notes": "Cà phê cần khí hậu mát mẻ, ẩm ướt. Không chịu được ngập úng.",
-    },
-    "vegetable": {
-        "name_vi": "Rau màu",
-        "name_en": "Vegetable",
-        "growth_days": 65,
-        "temp_min": 18.0,
-        "temp_max": 30.0,
-        "temp_optimal": 24.0,
-        "rainfall_min": 80.0,
-        "rainfall_max": 200.0,
-        "rainfall_optimal": 120.0,
-        "humidity_min": 60.0,
-        "humidity_max": 80.0,
-        "humidity_optimal": 70.0,
-        "rain_tolerance": "low",  # Không chịu được ngập, cần thoát nước tốt
-        "notes": "Rau màu cần đất thoát nước tốt. Ngập úng gây thối rễ.",
-    },
+# Đường dẫn dataset
+CROPS_DATA_PATH = f"{BASE_DIR}/app/data/dien_bien_crops_ml.csv"
+
+# Cache dataset
+_crops_df = None
+
+
+def _load_crops_data() -> pd.DataFrame:
+    """Load dataset cây trồng Điện Biên."""
+    global _crops_df
+    if _crops_df is None:
+        try:
+            _crops_df = pd.read_csv(CROPS_DATA_PATH)
+        except Exception as e:
+            print(f"[YieldService] Warning: Cannot load crops data: {e}")
+            _crops_df = pd.DataFrame()
+    return _crops_df
+
+
+# Map tên crop trong dataset -> crop type cho hệ thống
+CROP_TYPE_MAP = {
+    "Bắc Thơm số 7": "rice",
+    "Séng Cù": "rice",
+    "IR64": "rice",
+    "Cà phê": "coffee",
+    "Cà chua": "vegetable",
 }
 
-# Tọa độ theo huyện Điện Biên (cho weather API)
+# Tọa độ theo huyện Điện Biên
 DISTRICT_COORDS = {
     "Thành phố Điện Biên Phủ": (21.3865, 103.0231),
     "Huyện Tuần Giáo": (21.6167, 103.4333),
@@ -76,12 +55,115 @@ DISTRICT_COORDS = {
     "Huyện Nậm Pồ": (21.8333, 102.7333),
 }
 
-DEFAULT_COORDS = (21.8, 103.0)  # Điện Biên center
+DEFAULT_COORDS = (21.8, 103.0)
 
 
 def _get_coords(district: str) -> tuple[float, float]:
     """Lấy tọa độ từ tên huyện."""
     return DISTRICT_COORDS.get(district, DEFAULT_COORDS)
+
+
+def _get_crop_info_from_dataset(crop_type: str, season: str = None) -> dict:
+    """Lấy thông tin cây trồng từ dataset."""
+    df = _load_crops_data()
+    if df.empty:
+        return _get_default_crop_info(crop_type)
+
+    # Filter theo crop type
+    crop_name_map = {v: k for k, v in CROP_TYPE_MAP.items()}
+    if crop_type in crop_name_map:
+        df = df[df["crop"] == crop_name_map[crop_type]]
+
+    if season and not df.empty:
+        # Filter theo mùa
+        df_season = df[df["season"] == season]
+        if not df_season.empty:
+            df = df_season
+
+    if df.empty:
+        return _get_default_crop_info(crop_type)
+
+    row = df.iloc[0]
+
+    return {
+        "name": row.get("crop", crop_type),
+        "season": row.get("season", "unknown"),
+        "growth_days_min": int(row.get("growth_days_min", 100)),
+        "growth_days_max": int(row.get("growth_days_max", 120)),
+        "temp_min": float(row.get("temp_c_min", 20)),
+        "temp_max": float(row.get("temp_c_max", 30)),
+        "temp_optimal": (float(row.get("temp_c_min", 20)) + float(row.get("temp_c_max", 30))) / 2,
+        "humidity_min": float(row.get("humidity_pct_min", 70)),
+        "humidity_max": float(row.get("humidity_pct_max", 90)),
+        "humidity_optimal": (float(row.get("humidity_pct_min", 70)) + float(row.get("humidity_pct_max", 90))) / 2,
+        "rainfall_min": float(row.get("rainfall_mm_min", 1000)),
+        "rainfall_max": float(row.get("rainfall_mm_max", 2000)),
+        "rainfall_optimal": (float(row.get("rainfall_mm_min", 1000)) + float(row.get("rainfall_mm_max", 2000))) / 2,
+        "pH_min": float(row.get("soil_ph_min", 5.5)),
+        "pH_max": float(row.get("soil_ph_max", 7.5)),
+        "yield_min": float(row.get("yield_ton_ha_min", 5.0)),
+        "yield_max": float(row.get("yield_ton_ha_max", 6.0)),
+        "altitude_min": row.get("altitude_m_min"),
+        "altitude_max": row.get("altitude_m_max"),
+    }
+
+
+def _get_default_crop_info(crop_type: str) -> dict:
+    """Fallback info nếu không load được dataset."""
+    defaults = {
+        "rice": {
+            "name": "Lúa",
+            "season": "xuân/mùa",
+            "growth_days_min": 100,
+            "growth_days_max": 140,
+            "temp_min": 20.0,
+            "temp_max": 30.0,
+            "temp_optimal": 25.0,
+            "humidity_min": 70.0,
+            "humidity_max": 90.0,
+            "humidity_optimal": 80.0,
+            "rainfall_min": 1200.0,
+            "rainfall_max": 1800.0,
+            "rainfall_optimal": 1500.0,
+            "yield_min": 5.0,
+            "yield_max": 6.5,
+        },
+        "coffee": {
+            "name": "Cà phê",
+            "season": "quanh năm",
+            "growth_days_min": 720,
+            "growth_days_max": 1440,
+            "temp_min": 18.0,
+            "temp_max": 25.0,
+            "temp_optimal": 22.0,
+            "humidity_min": 60.0,
+            "humidity_max": 70.0,
+            "humidity_optimal": 65.0,
+            "rainfall_min": 1500.0,
+            "rainfall_max": 2500.0,
+            "rainfall_optimal": 2000.0,
+            "yield_min": 2.5,
+            "yield_max": 3.5,
+        },
+        "vegetable": {
+            "name": "Rau màu",
+            "season": "đông xuân",
+            "growth_days_min": 65,
+            "growth_days_max": 120,
+            "temp_min": 18.0,
+            "temp_max": 29.0,
+            "temp_optimal": 24.0,
+            "humidity_min": 60.0,
+            "humidity_max": 70.0,
+            "humidity_optimal": 65.0,
+            "rainfall_min": 800.0,
+            "rainfall_max": 1500.0,
+            "rainfall_optimal": 1000.0,
+            "yield_min": 10.0,
+            "yield_max": 70.0,
+        },
+    }
+    return defaults.get(crop_type, defaults["rice"])
 
 
 def _calculate_weather_deviation(current: dict, optimal: dict) -> dict:
@@ -94,10 +176,10 @@ def _calculate_weather_deviation(current: dict, optimal: dict) -> dict:
     temp_dev = abs(temp - optimal["temp_optimal"])
     if temp < optimal["temp_min"]:
         temp_status = "too_cold"
-        temp_impact = -0.15
+        temp_impact = -0.15 * (optimal["temp_min"] - temp) / 5
     elif temp > optimal["temp_max"]:
         temp_status = "too_hot"
-        temp_impact = -0.20
+        temp_impact = -0.20 * (temp - optimal["temp_max"]) / 5
     else:
         temp_status = "optimal"
         temp_impact = 0.0
@@ -105,23 +187,36 @@ def _calculate_weather_deviation(current: dict, optimal: dict) -> dict:
     # Độ lệch độ ẩm
     if humidity < optimal["humidity_min"]:
         humidity_status = "too_dry"
-        humidity_impact = -0.10
+        humidity_impact = -0.10 * (optimal["humidity_min"] - humidity) / 10
     elif humidity > optimal["humidity_max"]:
         humidity_status = "too_humid"
-        humidity_impact = -0.05 if optimal["rain_tolerance"] == "high" else -0.15
+        humidity_impact = -0.10
     else:
         humidity_status = "optimal"
         humidity_impact = 0.05
 
-    # Ảnh hưởng mưa
+    # Ảnh hưởng mưa trong ngày (cần context về tổng lượng mưa theo mùa)
     rain_impact = 0.0
-    if rainfall > 10:  # Mưa nhiều trong ngày
-        if optimal["rain_tolerance"] == "high":
-            rain_impact = 0.05  # Tốt cho lúa
-        elif optimal["rain_tolerance"] == "medium":
-            rain_impact = -0.05
-        else:
-            rain_impact = -0.15  # Xấu cho rau
+    crop_type = optimal.get("name", "").lower()
+
+    if "lúa" in crop_type or "rice" in str(optimal):
+        # Lúa ưa nước
+        if rainfall > 20:
+            rain_impact = 0.05
+        elif rainfall > 5:
+            rain_impact = 0.02
+    elif "cà phê" in crop_type or "coffee" in str(optimal):
+        # Cà phê không thích ngập
+        if rainfall > 30:
+            rain_impact = -0.10
+        elif rainfall > 10:
+            rain_impact = -0.02
+    else:
+        # Rau cần thoát nước
+        if rainfall > 15:
+            rain_impact = -0.12
+        elif rainfall > 5:
+            rain_impact = -0.03
 
     # Tổng impact
     total_impact = temp_impact + humidity_impact + rain_impact
@@ -134,7 +229,7 @@ def _calculate_weather_deviation(current: dict, optimal: dict) -> dict:
         "humidity_status": humidity_status,
         "rainfall": rainfall,
         "rain_impact": rain_impact,
-        "total_impact": round(total_impact, 3),
+        "total_impact": round(max(-0.5, min(0.3, total_impact)), 3),
     }
 
 
@@ -155,23 +250,25 @@ def _get_harvest_recommendation(
 
     if deviation["temp_status"] == "too_hot":
         danger_signs.append(f"Nhiệt độ cao {deviation['temp']}°C (tối đa: {optimal['temp_max']}°C)")
+    elif deviation["temp_status"] == "too_cold":
+        danger_signs.append(f"Nhiệt độ thấp {deviation['temp']}°C (tối thiểu: {optimal['temp_min']}°C)")
 
-    if deviation["humidity_status"] == "too_humid" and optimal["rain_tolerance"] != "high":
-        danger_signs.append(f"Độ ẩm cao {deviation['humidity']}% - nguy cơ nấm bệnh")
+    if deviation["humidity_status"] == "too_humid":
+        danger_signs.append(f"Độ ẩm cao {deviation['humidity']}%")
 
-    if deviation["rain_impact"] < -0.10:
+    if deviation["rain_impact"] < -0.08:
         danger_signs.append("Mưa nhiều gây ngập úng, cần thoát nước gấp")
 
     # Quyết định thu hoạch
     if remaining_days <= 7 and deviation["total_impact"] < -0.20:
         harvest_advice = "harvest_early"
-        advice_note = f"Khuyến cáo THU HOẠCH SỚM trong 5-7 ngày. Thời tiết bất lợi sẽ ảnh hưởng nghiêm trọng đến chất lượng."
+        advice_note = "Khuyến cáo THU HOẠCH SỚM trong 5-7 ngày. Thời tiết bất lợi ảnh hưởng nghiêm trọng."
     elif remaining_days <= 14 and deviation["total_impact"] < -0.15:
         harvest_advice = "prepare_harvest"
-        advice_note = "Chuẩn bị thu hoạch sớm trong 2 tuần tới. Theo dõi thời tiết chặt chẽ."
-    elif deviation["total_impact"] > 0:
+        advice_note = "Chuẩn bị thu hoạch sớm trong 2 tuần. Theo dõi thời tiết chặt chẽ."
+    elif deviation["total_impact"] > 0.05:
         harvest_advice = "optimal"
-        advice_note = "Điều kiện thời tiết thuận lợi cho cây trồng. Tiếp tục chăm sóc bình thường."
+        advice_note = "Điều kiện thời tiết thuận lợi. Tiếp tục chăm sóc bình thường."
     elif danger_signs:
         harvest_advice = "monitor"
         advice_note = f"Cảnh báo: {'; '.join(danger_signs)}. Cần theo dõi thường xuyên."
@@ -184,39 +281,28 @@ def _get_harvest_recommendation(
     }
 
 
-def _calculate_base_yield(crop_name: str, area_ha: float) -> float:
-    """Tính năng suất cơ bản theo loại cây và diện tích."""
-    base_yields = {
-        "rice": 5.5,      # tấn/ha
-        "coffee": 2.5,    # tấn/ha
-        "vegetable": 12.0, # tấn/ha
-    }
-    return base_yields.get(crop_name, 5.0) * area_ha
-
-
 def predict_yield(
     crop_name: str,
     area_ha: float,
     sowing_date: date,
-    district: str = "Điện Biên",
+    district: str = "Thành phố Điện Biên Phủ",
+    season: str = None,
 ) -> dict:
     """
-    Dự báo năng suất dựa trên thời tiết thực tế.
+    Dự báo năng suất dựa trên thời tiết thực tế + dataset Điện Biên.
 
     Args:
         crop_name: Loại cây (rice/coffee/vegetable)
         area_ha: Diện tích (ha)
         sowing_date: Ngày gieo trồng
         district: Tên huyện để lấy tọa độ thời tiết
+        season: Mùa vụ (xuân, mùa, đông, chiêm) - optional
 
     Returns:
         dict với dự báo năng suất, so sánh thời tiết, và khuyến cáo
     """
-    # Validate crop
-    if crop_name not in OPTIMAL_WEATHER:
-        crop_name = "rice"
-
-    optimal = OPTIMAL_WEATHER[crop_name]
+    # Lấy thông tin cây trồng từ dataset
+    optimal = _get_crop_info_from_dataset(crop_name, season)
     lat, lon = _get_coords(district)
 
     # Lấy thời tiết hiện tại
@@ -232,19 +318,20 @@ def predict_yield(
     days_since_planting = (date.today() - sowing_date).days
 
     # Tính ngày thu hoạch dự kiến
-    harvest_date = sowing_date + timedelta(days=optimal["growth_days"])
+    growth_days_avg = (optimal["growth_days_min"] + optimal["growth_days_max"]) // 2
+    harvest_date = sowing_date + timedelta(days=growth_days_avg)
 
     # Tính năng suất với điều chỉnh thời tiết
-    base_yield = _calculate_base_yield(crop_name, area_ha)
-    adjusted_yield = base_yield * (1 + deviation["total_impact"])
-    adjusted_yield_per_ha = adjusted_yield / area_ha if area_ha > 0 else 0
+    base_yield = (optimal["yield_min"] + optimal["yield_max"]) / 2
+    adjusted_yield_per_ha = base_yield * (1 + deviation["total_impact"])
+    total_yield = adjusted_yield_per_ha * area_ha
 
     # Khuyến cáo thu hoạch
     harvest_rec = _get_harvest_recommendation(
-        deviation, optimal, current_weather, days_since_planting, optimal["growth_days"]
+        deviation, optimal, current_weather, days_since_planting, growth_days_avg
     )
 
-    # Tính confidence dựa trên độ lệch thời tiết
+    # Confidence dựa trên độ lệch
     confidence = max(0.6, min(0.95, 0.85 - abs(deviation["total_impact"]) * 0.5))
 
     # Risk level
@@ -277,11 +364,22 @@ def predict_yield(
         },
     }
 
+    # Crop info for frontend
+    crop_info = {
+        "name_vi": optimal["name"],
+        "season": optimal["season"],
+        "growth_days_min": optimal["growth_days_min"],
+        "growth_days_max": optimal["growth_days_max"],
+        "days_since_planting": days_since_planting,
+        "yield_range": f"{optimal['yield_min']}-{optimal['yield_max']} tấn/ha",
+    }
+
     return {
         # Yield prediction
-        "predicted_yield_tons": round(max(0, adjusted_yield), 2),
+        "predicted_yield_tons": round(max(0, total_yield), 2),
         "predicted_yield_per_ha": round(max(0, adjusted_yield_per_ha), 2),
-        "base_yield_per_ha": optimal["name_vi"],
+        "base_yield_per_ha": round(base_yield, 2),
+        "yield_range": f"{optimal['yield_min']}-{optimal['yield_max']} tấn/ha",
         "harvest_date": harvest_date,
         "confidence": round(confidence, 2),
 
@@ -291,12 +389,7 @@ def predict_yield(
         "weather_deviation_pct": round(deviation["total_impact"] * 100, 1),
 
         # Crop info
-        "crop_info": {
-            "name_vi": optimal["name_vi"],
-            "growth_days": optimal["growth_days"],
-            "days_since_planting": days_since_planting,
-            "notes": optimal["notes"],
-        },
+        "crop_info": crop_info,
 
         # Harvest recommendation
         "harvest": harvest_rec,

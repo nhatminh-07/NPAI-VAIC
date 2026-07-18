@@ -37,7 +37,8 @@ export interface YieldInput {
   cropType: CropType;
   areaHa: number;
   plantingDate: string; // ISO date
-  district: string;
+  district?: string;
+  season?: string; // xuân, mùa, đông, chiêm
 }
 
 // So sánh thời tiết hiện tại với điều kiện tối ưu cho loại cây đang trồng.
@@ -64,14 +65,18 @@ export interface WeatherComparison {
 // Backend trả về nhưng trang /forecast hiện CHƯA hiển thị các trường này lên UI.
 export interface CropInfo {
   name_vi: string;
-  growth_days: number; // tổng số ngày sinh trưởng dự kiến của giống cây
-  days_since_planting: number; // số ngày đã trồng tính đến thời điểm gọi API
-  notes: string;
+  season: string;
+  growth_days_min: number;
+  growth_days_max: number;
+  days_since_planting: number;
+  yield_range: string;
 }
 
 export interface YieldForecastResult {
   predictedYieldTPerHa: number;
   totalOutputTons: number;
+  yieldRange: string;
+  baseYieldPerHa: number;
   harvestWindowStart: string; // ISO date
   harvestWindowEnd: string; // ISO date
   confidence: number; // 0..1

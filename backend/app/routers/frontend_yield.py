@@ -5,12 +5,12 @@ Response: YieldForecastResult
 
 Luồng:
 1. Lấy thời tiết hiện tại từ Open-Meteo API
-2. Đối chiếu với điều kiện lý tưởng của từng loại cây
+2. Đối chiếu với điều kiện lý tưởng của từng loại cây (từ dataset dien_bien_crops_ml.csv)
 3. Tính độ lệch và đưa ra dự báo năng suất
-4. Khuyến cáo thu hoạch
+4. Khuyến cáo thu hoạch sớm/nорма/nếu nguy hiểm
 """
 from datetime import date, timedelta
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -25,6 +25,7 @@ class YieldInput(BaseModel):
     areaHa: float
     plantingDate: str  # ISO date string: YYYY-MM-DD
     district: Optional[str] = "Thành phố Điện Biên Phủ"
+    season: Optional[str] = None  # xuân, mùa, đông, chiêm (optional)
 
 
 @router.post("/predict")
@@ -32,7 +33,7 @@ async def predict_yield_frontend(input: YieldInput):
     """
     Frontend API: Dự báo năng suất dựa trên thời tiết thực tế.
     - Lấy thời tiết hiện tại từ Open-Meteo API
-    - So sánh với điều kiện lý tưởng của từng loại cây
+    - So sánh với điều kiện lý tưởng của từng loại cây (từ dataset Điện Biên)
     - Đưa ra dự báo năng suất có điều chỉnh
     - Khuyến cáo thu hoạch sớm/nорма/nếu nguy hiểm
     """
@@ -50,6 +51,7 @@ async def predict_yield_frontend(input: YieldInput):
             area_ha=input.areaHa,
             sowing_date=sowing_date,
             district=input.district or "Thành phố Điện Biên Phủ",
+            season=input.season,
         )
     except Exception as e:
         raise HTTPException(500, f"Lỗi dự báo năng suất: {e}")
@@ -72,7 +74,7 @@ async def predict_yield_frontend(input: YieldInput):
     rationale = [
         f"Diện tích {input.areaHa} ha cây {result['crop_info']['name_vi']}",
         f"Ngày gieo: {input.plantingDate}, đã trồng {result['crop_info']['days_since_planting']} ngày",
-        f"Thời tiết hiện tại: {result['current_weather']['weather_description']}, {result['current_weather']['temperature']}°C",
+        f"Thời tiết hiện tại: {result['current_weather']['weather_description']}, {result['current_weather']['temperature']}°C, {result['current_weather']['humidity']}%",
         f"Độ lệch so với lý tưởng: {result['weather_deviation_pct']}%",
     ]
 
@@ -82,6 +84,8 @@ async def predict_yield_frontend(input: YieldInput):
     return {
         "predictedYieldTPerHa": result["predicted_yield_per_ha"],
         "totalOutputTons": result["predicted_yield_tons"],
+        "yieldRange": result["yield_range"],
+        "baseYieldPerHa": result["base_yield_per_ha"],
         "harvestWindowStart": window_start.isoformat(),
         "harvestWindowEnd": window_end.isoformat(),
         "confidence": result["confidence"],
