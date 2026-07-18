@@ -17,7 +17,7 @@ export const copy = {
   },
 
   rolePicker: {
-    title: 'Gạo Bản',
+    title: 'Gạo Bản - Đồng hành để vươn xa',
     subtitle: 'Chọn vai trò của bạn để bắt đầu',
     farmer: 'Tôi là nông dân',
     farmerDesc: 'Chẩn đoán bệnh cây, dự báo năng suất, xem giá thị trường',
