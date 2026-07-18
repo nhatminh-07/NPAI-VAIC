@@ -43,8 +43,9 @@ CROP_TYPE_MAP = {
     "Cà chua": "vegetable",
 }
 
-# Tọa độ theo huyện Điện Biên
+# Tọa độ theo huyện Điện Biên (hỗ trợ cả tên viết tắt từ frontend và tên đầy đủ)
 DISTRICT_COORDS = {
+    # Tên đầy đủ
     "Thành phố Điện Biên Phủ": (21.3865, 103.0231),
     "Huyện Tuần Giáo": (21.6167, 103.4333),
     "Huyện Mường Chà": (21.7000, 102.8833),
@@ -53,6 +54,15 @@ DISTRICT_COORDS = {
     "Huyện Điện Biên Đông": (21.3667, 102.8167),
     "Huyện Mường Ảng": (21.5833, 103.1500),
     "Huyện Nậm Pồ": (21.8333, 102.7333),
+    # Tên viết tắt (theo frontend/src/constants/districts.ts, dùng bởi hệ thống vùng canh tác)
+    "Điện Biên": (21.3865, 103.0231),
+    "Điện Biên Đông": (21.3667, 102.8167),
+    "Mường Ảng": (21.5833, 103.1500),
+    "Mường Chà": (21.7000, 102.8833),
+    "Mường Nhé": (21.9667, 102.4667),
+    "Nậm Pồ": (21.8333, 102.7333),
+    "Tủa Chùa": (21.4833, 103.0833),
+    "Tuần Giáo": (21.6167, 103.4333),
 }
 
 DEFAULT_COORDS = (21.8, 103.0)

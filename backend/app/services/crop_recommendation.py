@@ -128,13 +128,6 @@ CROP_INFO = {
         "yield": "30-60 tấn/ha",
         "tips": "Sinh trưởng nhanh, cần nhiều phân.",
     },
-    "pomegranate": {
-        "name_vi": "Lựu",
-        "season": "Sep-Dec",
-        "duration": "180-200 ngày",
-        "yield": "15-25 tấn/ha",
-        "tips": "Chịu hạn, cần nắng nhiều.",
-    },
     "coffee": {
         "name_vi": "Cà phê",
         "season": "Oct-Dec (thu hoạch)",

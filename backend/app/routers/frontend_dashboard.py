@@ -18,9 +18,10 @@ THIẾT KẾ (đã hợp nhất + theo kỳ - xem backend/REQUIREMENTS_farming_m
 from datetime import date, datetime
 from typing import Optional
 import re
+import calendar
 from collections import defaultdict
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -56,7 +57,8 @@ def _quarter_bounds(year: int, quarter: int) -> tuple[date, date]:
     if end_month > 12:
         end_month -= 12
         end_year += 1
-    end = date(end_year, end_month, 28)
+    last_day = calendar.monthrange(end_year, end_month)[1]
+    end = date(end_year, end_month, last_day)
     return start, end
 
 
@@ -95,14 +97,13 @@ def _in_range(dt, start: date, end: date) -> bool:
 async def get_dashboard_frontend(
     period: str = Query("quarter", description="vd '2026-Q3', hoặc 'quarter'"),
     cropId: Optional[int] = Query(None, description="1=rice, 2=coffee, 3=vegetable"),
+    db: Session = Depends(get_db),
 ):
     """Frontend API: Dashboard so sánh kỳ - mọi số liệu lọc theo kỳ đang chọn."""
     crop_name = CROP_ID_TO_NAME.get(cropId) if cropId else None
 
     current_start, current_end = parse_period(period)
     prev_start, prev_end = _prev_quarter_bounds(current_start)
-
-    db: Session = next(get_db())
 
     # --- Tải toàn bộ, rồi CẮT THEO KỲ (created_at) ---
     all_regions = db.query(FarmingRegion).all()
