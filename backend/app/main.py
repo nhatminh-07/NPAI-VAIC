@@ -9,6 +9,9 @@ from app.routers import disease, yield_forecast, market_price
 from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard
 from app.routers import assistant
 
+# Import seed_data module để có thể gọi
+import seed_data
+
 # Tạo bảng nếu chưa tồn tại (MVP dùng SQLite; khi lên Supabase có thể dùng Alembic)
 Base.metadata.create_all(bind=engine)
 
@@ -50,3 +53,13 @@ app.include_router(assistant.router)
 @app.get("/")
 def health_check():
     return {"status": "ok", "message": "AI Nông Nghiệp Điện Biên API đang chạy"}
+
+
+@app.post("/admin/seed")
+def trigger_seed():
+    """Endpoint để seed dữ liệu mẫu. Chỉ dùng trong development/production setup."""
+    try:
+        seed_data.run()
+        return {"status": "ok", "message": "Seed data completed"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
