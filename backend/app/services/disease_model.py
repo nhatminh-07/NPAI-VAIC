@@ -8,8 +8,17 @@ import os
 from typing import Optional, Tuple
 
 from PIL import Image
-import torch
-from transformers import MobileNetV2ForImageClassification, MobileNetV2ImageProcessor
+
+try:
+    import torch
+    from transformers import MobileNetV2ForImageClassification, MobileNetV2ImageProcessor
+except Exception as exc:  # pragma: no cover - depends on local ML runtime
+    torch = None
+    MobileNetV2ForImageClassification = None
+    MobileNetV2ImageProcessor = None
+    _IMPORT_ERROR = exc
+else:
+    _IMPORT_ERROR = None
 
 MODEL_NAME = "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification"
 
@@ -81,7 +90,14 @@ class MobileNetV2DiseaseModel:
         return cls._instance
 
     def _load_model(self) -> None:
-        """Load model và processor từ HuggingFace Hub."""
+        """Load model và processor từ HuggingFace Hub khi runtime hỗ trợ."""
+        if torch is None or MobileNetV2ForImageClassification is None or MobileNetV2ImageProcessor is None:
+            print(f"[DiseaseModel] torch/transformers unavailable: {_IMPORT_ERROR}")
+            print("[DiseaseModel] Falling back to heuristic model")
+            self._model = None
+            self._processor = None
+            return
+
         try:
             print(f"[DiseaseModel] Loading MobileNetV2 from HuggingFace: {MODEL_NAME}")
             self._processor = MobileNetV2ImageProcessor.from_pretrained(MODEL_NAME)
@@ -107,7 +123,7 @@ class MobileNetV2DiseaseModel:
         """
         image = Image.open(image_path).convert("RGB")
 
-        if self._model is None or self._processor is None:
+        if self._model is None or self._processor is None or torch is None:
             return self._heuristic_predict(image, crop_name)
 
         try:
