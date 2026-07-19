@@ -32,7 +32,7 @@ type SortKey = keyof Pick<DistrictRanking, 'district' | 'yieldTPerHa' | 'outputT
 // Bảng màu dùng cho các mục trong biểu đồ "Số ca bệnh theo loại" - lặp vòng qua mảng
 // này nếu số loại bệnh nhiều hơn số màu (xem seriesPalette[i % seriesPalette.length]).
 const seriesPalette = ['#16a34a', '#0d9488', '#84a98c', '#d97706', '#65a30d'];
-const quarterOptions = recentQuarterOptions();
+const quarterOptions = recentQuarterOptions(8);
 
 // Hiển thị % thay đổi kèm mũi tên lên/xuống, dùng cho các thẻ KPI (so với quý trước /
 // so với cùng kỳ năm trước).

@@ -26,10 +26,12 @@ DISEASES_BY_CROP = {
 
 # (q_offset, n_regions, avg_area, yield_factor, disease_per_region)
 SEASONAL_PATTERN = [
-    (8, 2, 28, 0.55, 4), (7, 3, 32, 0.75, 3),
-    (6, 4, 30, 0.90, 5), (5, 3, 35, 1.10, 4),
-    (4, 5, 38, 1.20, 3), (3, 4, 42, 1.05, 5),
-    (2, 6, 45, 0.95, 4), (1, 5, 50, 1.15, 3),
+    (9, 2, 28, 0.55, 4), (8, 3, 32, 0.75, 3),
+    (7, 4, 30, 0.90, 5), (6, 3, 35, 1.10, 4),
+    (5, 5, 38, 1.20, 3), (4, 4, 42, 1.05, 5),
+    (3, 6, 45, 0.95, 4), (2, 5, 50, 1.15, 3),
+    # Q3/2026 = quý hiện tại - vẫn seed để dashboard có data ngay khi deploy
+    (0, 3, 40, 1.05, 4),
 ]
 
 BASE_YIELD = {"rice": 5.5, "coffee": 2.5, "vegetable": 12.0}
@@ -62,6 +64,7 @@ class SeedResponse(BaseModel):
     periods: int
     diseases: int
     yields: int
+    severity_updated: int
     total_regions: int
     total_periods: int
     total_diseases: int
@@ -77,7 +80,19 @@ def seed_all():
     today = date.today()
 
     created_regions = created_periods = created_diseases = created_yields = 0
+    severity_updated = 0
     skipped = 0
+
+    # Backfill severity cho disease_detections cũ (severity null hoặc đang để "moderate"
+    # đồng loạt do seed_data.py cũ không set). Phân bố: 30% mild, 50% moderate, 20% severe.
+    SEVERITY_DIST = ["mild"] * 3 + ["moderate"] * 5 + ["severe"] * 2
+    old_diseases = db.query(DiseaseDetection).all()
+    for d in old_diseases:
+        if d.severity is None or d.severity == "moderate":
+            d.severity = random.choice(SEVERITY_DIST)
+            severity_updated += 1
+    if severity_updated:
+        db.commit()
 
     for q_off, n_regions, avg_area, yield_factor, disease_per_region in SEASONAL_PATTERN:
         ql = _quarter_label(today, q_off)
@@ -150,9 +165,10 @@ def seed_all():
     db.close()
 
     return SeedResponse(
-        message=f"Đã tạo {created_regions} vùng, {created_periods} vụ, {created_diseases} báo cáo bệnh, {created_yields} dự báo (bỏ qua {skipped} trùng)",
+        message=f"Đã tạo {created_regions} vùng, {created_periods} vụ, {created_diseases} báo cáo bệnh, {created_yields} dự báo (bỏ qua {skipped} trùng), cập nhật severity {severity_updated} báo cáo cũ",
         regions=created_regions, periods=created_periods,
         diseases=created_diseases, yields=created_yields,
+        severity_updated=severity_updated,
         total_regions=total_regions, total_periods=total_periods,
         total_diseases=total_diseases, total_yields=total_yields,
     )
