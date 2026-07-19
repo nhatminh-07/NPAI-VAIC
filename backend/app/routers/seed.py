@@ -83,14 +83,16 @@ def seed_all():
     severity_updated = 0
     skipped = 0
 
-    # Backfill severity cho disease_detections cũ (severity null hoặc đang để "moderate"
-    # đồng loạt do seed_data.py cũ không set). Phân bố: 30% mild, 50% moderate, 20% severe.
+    # Backfill severity cho TẤT CẢ disease_detections (cũ + mới) — phân bố 30/50/20.
+    # Cập nhật cả những dòng đã có severity hợp lệ để tránh data cũ bị "Trung bình" đồng loạt.
     SEVERITY_DIST = ["mild"] * 3 + ["moderate"] * 5 + ["severe"] * 2
     old_diseases = db.query(DiseaseDetection).all()
     for d in old_diseases:
-        if d.severity is None or d.severity == "moderate":
-            d.severity = random.choice(SEVERITY_DIST)
-            severity_updated += 1
+        d.severity = random.choice(SEVERITY_DIST)
+        # affected_plant_count cũng đang 0 hết do seed cũ không set - bổ sung luôn
+        if not d.affected_plant_count or d.affected_plant_count == 0:
+            d.affected_plant_count = random.randint(3, 50)
+        severity_updated += 1
     if severity_updated:
         db.commit()
 
