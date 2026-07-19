@@ -75,6 +75,8 @@ export default function PricesPage() {
   // Cách làm: điểm lịch sử cuối cùng được nhân đôi vai trò - vừa là điểm kết thúc của
   // đường "price" (lịch sử), vừa là điểm bắt đầu của đường "forecastPrice" (dự báo) -
   // gọi là "bridgeRow" (điểm nối). Nếu không có bridgeRow, 2 đường sẽ có khoảng hở.
+  // bridgeRow chỉ set `price` (không set `forecastPrice`/band) để tooltip tại điểm
+  // giao chỉ hiển thị dòng "Giá lịch sử" - tránh bị trùng 2 dòng "Giá dự báo".
   const chartData: ChartRow[] = useMemo(() => {
     if (!data || data.history.length === 0) return [];
     const historyRows: ChartRow[] = data.history.map((p) => ({ date: p.date, price: p.price }));
@@ -82,14 +84,16 @@ export default function PricesPage() {
     const bridgeRow: ChartRow = {
       date: lastHistory.date,
       price: lastHistory.price,
-      forecastPrice: lastHistory.price,
-      band: [lastHistory.price, lastHistory.price],
     };
-    const forecastRows: ChartRow[] = data.forecast.map((p) => ({
-      date: p.date,
-      forecastPrice: p.price,
-      band: [p.lowerBand, p.upperBand],
-    }));
+    // Bỏ qua điểm dự báo NaN (lỗi model) để không hiển thị giá trị NaN trên biểu đồ
+    // và tooltip.
+    const forecastRows: ChartRow[] = data.forecast
+      .filter((p) => Number.isFinite(p.price))
+      .map((p) => ({
+        date: p.date,
+        forecastPrice: p.price,
+        band: [p.lowerBand, p.upperBand],
+      }));
     // Bỏ điểm lịch sử cuối cùng ở historyRows (slice(0, -1)) vì đã có bản sao của nó
     // trong bridgeRow rồi - tránh trùng lặp 1 điểm trên biểu đồ.
     return [...historyRows.slice(0, -1), bridgeRow, ...forecastRows];

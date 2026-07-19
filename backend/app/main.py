@@ -9,6 +9,7 @@ from app.routers import disease, yield_forecast, market_price
 from app.routers import frontend_disease, frontend_yield, frontend_market, frontend_dashboard, frontend_crop
 from app.routers import assistant
 from app.routers import frontend_farming
+from app.routers import seed
 
 # Import seed_data module để có thể gọi
 import seed_data
@@ -54,6 +55,9 @@ app.include_router(assistant.router)
 
 # Quản lý vùng canh tác & vụ canh tác
 app.include_router(frontend_farming.router)
+
+# Seed endpoint (gọi 1 lần sau deploy để seed dữ liệu quý)
+app.include_router(seed.router)
 
 
 @app.get("/")
